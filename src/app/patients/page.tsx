@@ -1,9 +1,15 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientToolbar from "@/features/patients/components/PatientToolbar";
 import PatientsTable from "@/features/patients/components/PatientsTable";
-import { patients } from "@/features/patients/data/patients";
+import { prisma } from "@/lib/prisma";
 
-export default function PatientsPage() {
+export default async function PatientsPage() {
+  const patients = await prisma.patient.findMany({
+    orderBy: {
+      id: "desc",
+    },
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -13,20 +19,19 @@ export default function PatientsPage() {
             <h1 className="text-3xl font-bold text-slate-800">
               Patients
             </h1>
-            <p className="text-slate-500 mt-1">
+
+            <p className="mt-1 text-slate-500">
               Manage all patients and their information.
             </p>
           </div>
 
-          <button className="bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg transition">
+          <button className="rounded-lg bg-cyan-600 px-5 py-2 text-white transition hover:bg-cyan-700">
             + Add Patient
           </button>
         </div>
 
-        {/* Toolbar */}
         <PatientToolbar />
 
-        {/* Patients Table */}
         <PatientsTable patients={patients} />
       </div>
     </DashboardLayout>
