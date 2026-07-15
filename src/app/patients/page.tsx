@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientToolbar from "@/features/patients/components/PatientToolbar";
 import PatientsTable from "@/features/patients/components/PatientsTable";
@@ -25,13 +27,18 @@ export default async function PatientsPage() {
             </p>
           </div>
 
-          <button className="rounded-lg bg-cyan-600 px-5 py-2 text-white transition hover:bg-cyan-700">
+          <Link
+            href="/patients/new"
+            className="rounded-lg bg-cyan-600 px-5 py-2 text-white transition hover:bg-cyan-700"
+          >
             + Add Patient
-          </button>
+          </Link>
         </div>
 
+        {/* Toolbar */}
         <PatientToolbar />
 
+        {/* Patients Table */}
         <PatientsTable patients={patients} />
       </div>
     </DashboardLayout>
