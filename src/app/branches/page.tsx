@@ -1,14 +1,15 @@
-    import Link from "next/link";
+import Link from "next/link";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getBranches } from "@/features/branches/actions/getBranches";
+import BranchActions from "@/features/branches/components/BranchActions";
+
 export default async function BranchesPage() {
   const branches = await getBranches();
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">
@@ -32,8 +33,17 @@ export default async function BranchesPage() {
           <table className="w-full">
             <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 text-left">Branch Name</th>
-                <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3 text-left">
+                  Branch Name
+                </th>
+
+                <th className="px-4 py-3 text-center">
+                  Status
+                </th>
+
+                <th className="px-4 py-3 text-center">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -41,7 +51,7 @@ export default async function BranchesPage() {
               {branches.map((branch) => (
                 <tr
                   key={branch.id}
-                  className="border-t"
+                  className="border-t hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">
                     {branch.name}
@@ -50,13 +60,19 @@ export default async function BranchesPage() {
                   <td className="px-4 py-3 text-center">
                     {branch.status}
                   </td>
+
+                  <td className="px-4 py-3">
+                    <BranchActions
+                      branchId={branch.id}
+                    />
+                  </td>
                 </tr>
               ))}
 
               {branches.length === 0 && (
                 <tr>
                   <td
-                    colSpan={2}
+                    colSpan={3}
                     className="py-8 text-center text-slate-500"
                   >
                     No branches found.
@@ -66,7 +82,6 @@ export default async function BranchesPage() {
             </tbody>
           </table>
         </div>
-
       </div>
     </DashboardLayout>
   );

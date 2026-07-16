@@ -15,7 +15,7 @@ export default function NewBranchPage() {
           </p>
         </div>
 
-        <BranchForm />
+        <BranchForm mode="create" />
       </div>
     </DashboardLayout>
   );

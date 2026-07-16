@@ -2,26 +2,52 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBranch } from "../actions/createBranch";
 
-export default function BranchForm() {
+import { createBranch } from "../actions/createBranch";
+import { updateBranch } from "../actions/updateBranch";
+
+interface Props {
+  mode: "create" | "edit";
+  branch?: {
+    id: number;
+    name: string;
+    status: string;
+  };
+}
+
+export default function BranchForm({
+  mode,
+  branch,
+}: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(branch?.name ?? "");
 
-  const [status, setStatus] = useState("Active");
+  const [status, setStatus] = useState(
+    branch?.status ?? "Active"
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setLoading(true);
 
-    const result = await createBranch({
-      name,
-      status,
-    });
+    let result;
+
+    if (mode === "create") {
+      result = await createBranch({
+        name,
+        status,
+      });
+    } else {
+      result = await updateBranch({
+        id: branch!.id,
+        name,
+        status,
+      });
+    }
 
     setLoading(false);
 
@@ -29,7 +55,7 @@ export default function BranchForm() {
       router.push("/branches");
       router.refresh();
     } else {
-      alert("Branch already exists.");
+      alert("Something went wrong.");
     }
   }
 
@@ -82,7 +108,11 @@ export default function BranchForm() {
             disabled={loading}
             className="rounded-lg bg-cyan-600 px-6 py-3 text-white hover:bg-cyan-700 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Save Branch"}
+            {loading
+              ? "Saving..."
+              : mode === "create"
+              ? "Save Branch"
+              : "Update Branch"}
           </button>
         </div>
       </form>
