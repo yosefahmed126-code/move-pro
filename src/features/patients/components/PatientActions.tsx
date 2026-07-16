@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Eye, Pencil } from "lucide-react";
 
 interface Props {
@@ -9,21 +10,21 @@ interface Props {
 export default function PatientActions({ patientId }: Props) {
   return (
     <div className="flex items-center justify-center gap-2">
-      <button
+      <Link
+        href={`/patients/${patientId}`}
         title="View"
-        className="rounded-md p-2 text-cyan-600 hover:bg-cyan-50"
-        onClick={() => console.log("View", patientId)}
+        className="rounded-md p-2 text-cyan-600 transition hover:bg-cyan-50"
       >
         <Eye size={18} />
-      </button>
+      </Link>
 
-      <button
+      <Link
+        href={`/patients/${patientId}/edit`}
         title="Edit"
-        className="rounded-md p-2 text-orange-500 hover:bg-orange-50"
-        onClick={() => console.log("Edit", patientId)}
+        className="rounded-md p-2 text-orange-500 transition hover:bg-orange-50"
       >
         <Pencil size={18} />
-      </button>
+      </Link>
     </div>
   );
 }
