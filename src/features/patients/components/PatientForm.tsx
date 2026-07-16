@@ -3,25 +3,45 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPatient } from "../actions/createPatient";
+import { updatePatient } from "../actions/updatePatient";
 
-export default function PatientForm() {
+interface Props {
+  mode: "create" | "edit";
+  patient?: {
+    id: number;
+    name: string;
+    mobile: string;
+    branch: string;
+    therapist: string | null;
+  };
+}
+
+export default function PatientForm({ mode, patient }: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    name: "",
-    mobile: "",
-    branch: "",
-    therapist: "",
-  });
+  name: patient?.name ?? "",
+  mobile: patient?.mobile ?? "",
+  branch: patient?.branch ?? "",
+  therapist: patient?.therapist ?? "",
+});
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setLoading(true);
+let result;
 
-    const result = await createPatient(form);
+if (mode === "create") {
+  result = await createPatient(form);
+} else {
+  result = await updatePatient({
+    id: patient!.id,
+    ...form,
+  });
+}
 
     setLoading(false);
 

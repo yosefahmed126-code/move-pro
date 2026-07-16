@@ -15,7 +15,7 @@ export default function NewPatientPage() {
           </p>
         </div>
 
-        <PatientForm />
+        <PatientForm mode="create" />
       </div>
     </DashboardLayout>
   );
