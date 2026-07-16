@@ -1,11 +1,34 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 export default function PatientToolbar() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(
+    searchParams.get("search") ?? ""
+  );
+
+  function handleSearch(value: string) {
+    setSearch(value);
+
+    const params = new URLSearchParams(searchParams);
+
+    if (value) {
+      params.set("search", value);
+    } else {
+      params.delete("search");
+    }
+
+    router.push(`/patients?${params.toString()}`);
+  }
+
   return (
-    <div className="bg-white rounded-xl border shadow-sm p-5">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <div className="rounded-xl border bg-white p-5 shadow-sm">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div className="relative lg:col-span-2">
           <Search
             size={18}
@@ -14,21 +37,19 @@ export default function PatientToolbar() {
 
           <input
             type="text"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search patient..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full rounded-lg border py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-cyan-500"
           />
         </div>
 
-        <select className="border rounded-lg px-3 py-2">
+        <select className="rounded-lg border px-3 py-2">
           <option>All Branches</option>
-          <option>New Cairo</option>
-          <option>Nasr City</option>
         </select>
 
-        <select className="border rounded-lg px-3 py-2">
+        <select className="rounded-lg border px-3 py-2">
           <option>All Status</option>
-          <option>Active</option>
-          <option>Inactive</option>
         </select>
       </div>
     </div>

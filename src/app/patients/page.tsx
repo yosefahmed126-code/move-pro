@@ -4,13 +4,20 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientToolbar from "@/features/patients/components/PatientToolbar";
 import PatientsTable from "@/features/patients/components/PatientsTable";
 import { prisma } from "@/lib/prisma";
+interface Props {
+  searchParams: Promise<{
+    search?: string;
+  }>;
+}
 
-export default async function PatientsPage() {
-  const patients = await prisma.patient.findMany({
-    orderBy: {
-      id: "desc",
-    },
-  });
+export default async function PatientsPage({
+  searchParams,
+}: Props) {
+ const patients = await prisma.patient.findMany({
+  orderBy: {
+    id: "desc",
+  },
+});
 
   return (
     <DashboardLayout>
@@ -35,10 +42,8 @@ export default async function PatientsPage() {
           </Link>
         </div>
 
-        {/* Toolbar */}
         <PatientToolbar />
 
-        {/* Patients Table */}
         <PatientsTable patients={patients} />
       </div>
     </DashboardLayout>
