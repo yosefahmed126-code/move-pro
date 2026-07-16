@@ -43,7 +43,10 @@ export default function PatientsTable({ patients }: Props) {
                 <PatientStatusBadge status={patient.status} />
               </td>
               <td className="px-4 py-3">
-                <PatientActions patientId={patient.id} />
+                <PatientActions
+  patientId={patient.id}
+  patientName={patient.name}
+/>
               </td>
             </tr>
           ))}

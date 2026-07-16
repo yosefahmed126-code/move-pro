@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { Eye, Pencil } from "lucide-react";
+import DeletePatientDialog from "./DeletePatientDialog";
 
 interface Props {
   patientId: number;
+  patientName: string;
 }
 
-export default function PatientActions({ patientId }: Props) {
+export default function PatientActions({
+  patientId,
+  patientName,
+}: Props) {
   return (
     <div className="flex items-center justify-center gap-2">
       <Link
@@ -25,6 +30,11 @@ export default function PatientActions({ patientId }: Props) {
       >
         <Pencil size={18} />
       </Link>
+
+      <DeletePatientDialog
+        patientId={patientId}
+        patientName={patientName}
+      />
     </div>
   );
 }
