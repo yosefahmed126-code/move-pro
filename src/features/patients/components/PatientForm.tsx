@@ -7,26 +7,36 @@ import { updatePatient } from "../actions/updatePatient";
 
 interface Props {
   mode: "create" | "edit";
+
+  branches: {
+    id: number;
+    name: string;
+  }[];
+
   patient?: {
     id: number;
     name: string;
     mobile: string;
-    branch: string;
     therapist: string | null;
+    branchId: number;
   };
 }
 
-export default function PatientForm({ mode, patient }: Props) {
+export default function PatientForm({
+  mode,
+  patient,
+  branches,
+}: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    name: patient?.name ?? "",
-    mobile: patient?.mobile ?? "",
-    branch: patient?.branch ?? "",
-    therapist: patient?.therapist ?? "",
-  });
+ const [form, setForm] = useState({
+  name: patient?.name ?? "",
+  mobile: patient?.mobile ?? "",
+  branchId: patient?.branchId ?? 0,
+  therapist: patient?.therapist ?? "",
+});
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,21 +105,32 @@ export default function PatientForm({ mode, patient }: Props) {
         </div>
 
         <div>
-          <label className="mb-2 block font-medium">
-            Branch
-          </label>
+  <label className="mb-2 block font-medium">
+    Branch
+  </label>
 
-          <input
-            className="w-full rounded-lg border p-3"
-            value={form.branch}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                branch: e.target.value,
-              })
-            }
-          />
-        </div>
+  <select
+    className="w-full rounded-lg border p-3"
+    value={form.branchId}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        branchId: Number(e.target.value),
+      })
+    }
+  >
+    <option value={0}>Select Branch</option>
+
+    {branches.map((branch) => (
+      <option
+        key={branch.id}
+        value={branch.id}
+      >
+        {branch.name}
+      </option>
+    ))}
+  </select>
+</div>
 
         <div>
           <label className="mb-2 block font-medium">

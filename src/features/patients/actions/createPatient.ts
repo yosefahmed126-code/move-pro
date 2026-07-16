@@ -6,7 +6,7 @@ import { patientSchema } from "../schemas/patient.schema";
 export async function createPatient(data: {
   name: string;
   mobile: string;
-  branch: string;
+  branchId: number;
   therapist?: string;
 }) {
   const result = patientSchema.safeParse(data);
@@ -33,8 +33,14 @@ export async function createPatient(data: {
       code,
       name: data.name,
       mobile: data.mobile,
-      branch: data.branch,
       therapist: data.therapist || null,
+
+      branch: {
+        connect: {
+          id: data.branchId,
+        },
+      },
+
       remaining: 0,
       status: "Active",
     },

@@ -8,7 +8,7 @@ interface UpdatePatientData {
   id: number;
   name: string;
   mobile: string;
-  branch: string;
+  branchId: number;
   therapist?: string;
 }
 
@@ -29,8 +29,13 @@ export async function updatePatient(data: UpdatePatientData) {
     data: {
       name: data.name,
       mobile: data.mobile,
-      branch: data.branch,
       therapist: data.therapist || null,
+
+      branch: {
+        connect: {
+          id: data.branchId,
+        },
+      },
     },
   });
 

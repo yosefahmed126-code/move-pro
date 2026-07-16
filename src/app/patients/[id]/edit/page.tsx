@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PatientForm from "@/features/patients/components/PatientForm";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import PatientForm from "@/features/patients/components/PatientForm";
 
 interface Props {
   params: Promise<{
@@ -9,18 +9,32 @@ interface Props {
   }>;
 }
 
-export default async function EditPatientPage({ params }: Props) {
+export default async function EditPatientPage({
+  params,
+}: Props) {
   const { id } = await params;
 
   const patient = await prisma.patient.findUnique({
     where: {
       id: Number(id),
     },
+    include: {
+      branch: true,
+    },
   });
 
   if (!patient) {
     notFound();
   }
+
+  const branches = await prisma.branch.findMany({
+    where: {
+      status: "Active",
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
 
   return (
     <DashboardLayout>
@@ -36,9 +50,16 @@ export default async function EditPatientPage({ params }: Props) {
         </div>
 
         <PatientForm
-  mode="edit"
-  patient={patient}
-/>
+          mode="edit"
+          branches={branches}
+          patient={{
+            id: patient.id,
+            name: patient.name,
+            mobile: patient.mobile,
+            therapist: patient.therapist,
+            branchId: patient.branchId,
+          }}
+        />
       </div>
     </DashboardLayout>
   );

@@ -1,7 +1,17 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientForm from "@/features/patients/components/PatientForm";
+import { prisma } from "@/lib/prisma";
 
-export default function NewPatientPage() {
+export default async function NewPatientPage() {
+  const branches = await prisma.branch.findMany({
+    where: {
+      status: "Active",
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-5xl">
@@ -15,7 +25,10 @@ export default function NewPatientPage() {
           </p>
         </div>
 
-        <PatientForm mode="create" />
+        <PatientForm
+          mode="create"
+          branches={branches}
+        />
       </div>
     </DashboardLayout>
   );
