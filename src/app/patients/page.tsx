@@ -3,21 +3,28 @@ import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientToolbar from "@/features/patients/components/PatientToolbar";
 import PatientsTable from "@/features/patients/components/PatientsTable";
-import { prisma } from "@/lib/prisma";
+import { getPatients } from "@/features/patients/actions/getPatients";
+import Pagination from "@/components/ui/Pagination";
+
 interface Props {
   searchParams: Promise<{
     search?: string;
+    page?: string;
   }>;
 }
 
 export default async function PatientsPage({
   searchParams,
 }: Props) {
- const patients = await prisma.patient.findMany({
-  orderBy: {
-    id: "desc",
-  },
-});
+  const params = await searchParams;
+
+  const page = Number(params.page ?? "1");
+
+  const data = await getPatients(
+    params.search ?? "",
+    page,
+    10
+  );
 
   return (
     <DashboardLayout>
@@ -44,7 +51,18 @@ export default async function PatientsPage({
 
         <PatientToolbar />
 
-        <PatientsTable patients={patients} />
+        <PatientsTable patients={data.patients} />
+
+        <div className="flex items-center justify-between rounded-lg border bg-white p-4">
+  <p className="text-sm text-slate-600">
+    Total Patients: <strong>{data.total}</strong>
+  </p>
+
+  <Pagination
+    currentPage={data.currentPage}
+    totalPages={data.totalPages}
+  />
+</div>
       </div>
     </DashboardLayout>
   );

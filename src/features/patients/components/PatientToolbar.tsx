@@ -2,7 +2,8 @@
 
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
 
 export default function PatientToolbar() {
   const router = useRouter();
@@ -12,19 +13,19 @@ export default function PatientToolbar() {
     searchParams.get("search") ?? ""
   );
 
-  function handleSearch(value: string) {
-    setSearch(value);
+  const [debouncedSearch] = useDebounce(search, 300);
 
+  useEffect(() => {
     const params = new URLSearchParams(searchParams);
 
-    if (value) {
-      params.set("search", value);
+    if (debouncedSearch) {
+      params.set("search", debouncedSearch);
     } else {
       params.delete("search");
     }
 
     router.push(`/patients?${params.toString()}`);
-  }
+  }, [debouncedSearch, router, searchParams]);
 
   return (
     <div className="rounded-xl border bg-white p-5 shadow-sm">
@@ -36,12 +37,12 @@ export default function PatientToolbar() {
           />
 
           <input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search patient..."
-            className="w-full rounded-lg border py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-cyan-500"
-          />
+  type="text"
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  placeholder="Search patient..."
+  className="w-full rounded-lg border py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-cyan-500"
+/>
         </div>
 
         <select className="rounded-lg border px-3 py-2">

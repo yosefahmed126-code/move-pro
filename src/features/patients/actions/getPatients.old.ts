@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getPatients(search = "") {
-  return await prisma.patient.findMany({
+  return prisma.patient.findMany({
     where: search
       ? {
           OR: [
@@ -25,7 +25,6 @@ export async function getPatients(search = "") {
           ],
         }
       : {},
-
     orderBy: {
       id: "desc",
     },

@@ -22,26 +22,27 @@ export default function PatientForm({ mode, patient }: Props) {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-  name: patient?.name ?? "",
-  mobile: patient?.mobile ?? "",
-  branch: patient?.branch ?? "",
-  therapist: patient?.therapist ?? "",
-});
+    name: patient?.name ?? "",
+    mobile: patient?.mobile ?? "",
+    branch: patient?.branch ?? "",
+    therapist: patient?.therapist ?? "",
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setLoading(true);
-let result;
 
-if (mode === "create") {
-  result = await createPatient(form);
-} else {
-  result = await updatePatient({
-    id: patient!.id,
-    ...form,
-  });
-}
+    let result;
+
+    if (mode === "create") {
+      result = await createPatient(form);
+    } else {
+      result = await updatePatient({
+        id: patient!.id,
+        ...form,
+      });
+    }
 
     setLoading(false);
 
