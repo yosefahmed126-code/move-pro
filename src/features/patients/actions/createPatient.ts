@@ -3,13 +3,15 @@
 import { prisma } from "@/lib/prisma";
 import { patientSchema } from "../schemas/patient.schema";
 
-export async function createPatient(data: {
+interface CreatePatientData {
   name: string;
   mobile: string;
   branchId: number;
-  packageId: number;
-  therapist?: string;
-}) {
+  packageId: number | null;
+  therapistId: number | null;
+}
+
+export async function createPatient(data: CreatePatientData) {
   const result = patientSchema.safeParse(data);
 
   if (!result.success) {
@@ -19,11 +21,33 @@ export async function createPatient(data: {
     };
   }
 
-  const selectedPackage = await prisma.package.findUnique({
+  // Check duplicate mobile
+  const existing = await prisma.patient.findFirst({
     where: {
-      id: data.packageId,
+      mobile: data.mobile,
     },
   });
+
+  if (existing) {
+    return {
+      success: false,
+      message: "Patient with this mobile number already exists.",
+    };
+  }
+
+  // Get selected package
+  if (!data.packageId) {
+  return {
+    success: false,
+    message: "Please select a package.",
+  };
+}
+
+const selectedPackage = await prisma.package.findUnique({
+  where: {
+    id: data.packageId,
+  },
+});
 
   if (!selectedPackage) {
     return {
@@ -32,43 +56,49 @@ export async function createPatient(data: {
     };
   }
 
+  // Generate patient code based on last id
   const lastPatient = await prisma.patient.findFirst({
     orderBy: {
-      code: "desc",
+      id: "desc",
     },
   });
 
-  const lastCode = lastPatient
-    ? parseInt(lastPatient.code, 10)
-    : 0;
+  const nextId = (lastPatient?.id ?? 0) + 1;
+  const code = `MP-${String(nextId).padStart(4, "0")}`;
 
-  const code = (lastCode + 1)
-    .toString()
-    .padStart(3, "0");
-
+  // Create patient
   await prisma.patient.create({
-    data: {
-      code,
-      name: data.name,
-      mobile: data.mobile,
-      therapist: data.therapist || null,
+  data: {
+    code,
+    name: data.name,
+    mobile: data.mobile,
 
-      branch: {
-        connect: {
-          id: data.branchId,
-        },
+    branch: {
+      connect: {
+        id: data.branchId,
       },
-
-      package: {
-        connect: {
-          id: data.packageId,
-        },
-      },
-
-      remaining: selectedPackage.sessions,
-      status: "Active",
     },
-  });
+
+    package: data.packageId
+      ? {
+          connect: {
+            id: data.packageId,
+          },
+        }
+      : undefined,
+
+    therapist: data.therapistId
+      ? {
+          connect: {
+            id: data.therapistId,
+          },
+        }
+      : undefined,
+
+    remaining: selectedPackage.sessions,
+    status: "Active",
+  },
+});
 
   return {
     success: true,

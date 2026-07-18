@@ -14,6 +14,12 @@ export default async function EditPatientPage({
 }: Props) {
   const { id } = await params;
 
+  const therapists = await prisma.therapist.findMany({
+  orderBy: {
+    name: "asc",
+  },
+});
+
   const patient = await prisma.patient.findUnique({
     where: {
       id: Number(id),
@@ -68,6 +74,7 @@ export default async function EditPatientPage({
           mode="edit"
           branches={branches}
           packages={packages}
+          therapists={therapists}
           patient={{
             id: patient.id,
             name: patient.name,

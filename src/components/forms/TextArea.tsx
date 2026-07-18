@@ -1,15 +1,17 @@
+import { FieldError, UseFormRegisterReturn } from "react-hook-form";
+
 interface Props {
   label: string;
-  value: string;
   rows?: number;
-  onChange: (value: string) => void;
+  registration: UseFormRegisterReturn;
+  error?: FieldError;
 }
 
 export default function TextArea({
   label,
-  value,
   rows = 4,
-  onChange,
+  registration,
+  error,
 }: Props) {
   return (
     <div>
@@ -19,10 +21,19 @@ export default function TextArea({
 
       <textarea
         rows={rows}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 p-3 outline-none transition focus:border-cyan-500"
+        {...registration}
+        className={`w-full rounded-lg border p-3 outline-none transition ${
+          error
+            ? "border-red-500"
+            : "border-slate-300 focus:border-cyan-500"
+        }`}
       />
+
+      {error && (
+        <p className="mt-1 text-sm text-red-500">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 }

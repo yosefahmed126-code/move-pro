@@ -1,33 +1,42 @@
+import { FieldError, UseFormRegisterReturn } from "react-hook-form";
+
 interface TextInputProps {
   label: string;
-  value: string;
   type?: string;
   required?: boolean;
-  onChange: (value: string) => void;
+  registration: UseFormRegisterReturn;
+  error?: FieldError;
 }
 
 export default function TextInput({
   label,
-  value,
-  onChange,
   type = "text",
   required = false,
+  registration,
+  error,
 }: TextInputProps) {
   return (
     <div>
       <label className="mb-2 block text-sm font-medium">
         {label}
-        {required && (
-          <span className="text-red-500"> *</span>
-        )}
+        {required && <span className="text-red-500"> *</span>}
       </label>
 
       <input
         type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 p-3 outline-none transition focus:border-cyan-500"
+        {...registration}
+        className={`w-full rounded-lg border p-3 outline-none transition ${
+          error
+            ? "border-red-500"
+            : "border-slate-300 focus:border-cyan-500"
+        }`}
       />
+
+      {error && (
+        <p className="mt-1 text-sm text-red-500">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 }

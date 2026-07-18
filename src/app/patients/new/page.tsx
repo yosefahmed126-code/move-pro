@@ -26,6 +26,15 @@ export default async function NewPatientPage() {
     },
   });
 
+  const therapists = await prisma.therapist.findMany({
+    where: {
+      status: "Active",
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-5xl">
@@ -43,6 +52,7 @@ export default async function NewPatientPage() {
           mode="create"
           branches={branches}
           packages={packages}
+          therapists={therapists}
         />
       </div>
     </DashboardLayout>

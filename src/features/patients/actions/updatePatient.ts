@@ -9,8 +9,8 @@ interface UpdatePatientData {
   name: string;
   mobile: string;
   branchId: number;
-  packageId: number;
-  therapist?: string;
+  packageId: number | null;
+  therapistId: number | null;
 }
 
 export async function updatePatient(data: UpdatePatientData) {
@@ -20,6 +20,30 @@ export async function updatePatient(data: UpdatePatientData) {
     return {
       success: false,
       errors: result.error.flatten(),
+    };
+  }
+
+  // منع تكرار رقم الموبايل
+  const existing = await prisma.patient.findFirst({
+    where: {
+      mobile: data.mobile,
+      NOT: {
+        id: data.id,
+      },
+    },
+  });
+
+  if (existing) {
+    return {
+      success: false,
+      message: "Patient with this mobile number already exists.",
+    };
+  }
+
+  if (!data.packageId) {
+    return {
+      success: false,
+      message: "Please select a package.",
     };
   }
 
@@ -43,7 +67,6 @@ export async function updatePatient(data: UpdatePatientData) {
     data: {
       name: data.name,
       mobile: data.mobile,
-      therapist: data.therapist || null,
 
       branch: {
         connect: {
@@ -57,6 +80,16 @@ export async function updatePatient(data: UpdatePatientData) {
         },
       },
 
+      therapist: data.therapistId
+        ? {
+            connect: {
+              id: data.therapistId,
+            },
+          }
+        : {
+            disconnect: true,
+          },
+
       remaining: selectedPackage.sessions,
     },
   });
@@ -66,5 +99,6 @@ export async function updatePatient(data: UpdatePatientData) {
 
   return {
     success: true,
+    message: "Patient updated successfully.",
   };
 }
