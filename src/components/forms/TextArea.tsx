@@ -1,29 +1,24 @@
-interface TextInputProps {
+interface Props {
   label: string;
   value: string;
-  type?: string;
-  required?: boolean;
+  rows?: number;
   onChange: (value: string) => void;
 }
 
-export default function TextInput({
+export default function TextArea({
   label,
   value,
+  rows = 4,
   onChange,
-  type = "text",
-  required = false,
-}: TextInputProps) {
+}: Props) {
   return (
     <div>
       <label className="mb-2 block text-sm font-medium">
         {label}
-        {required && (
-          <span className="text-red-500"> *</span>
-        )}
       </label>
 
-      <input
-        type={type}
+      <textarea
+        rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-slate-300 p-3 outline-none transition focus:border-cyan-500"

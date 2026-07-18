@@ -1,36 +1,39 @@
 interface Option {
-  value: number | string;
+  value: string | number;
   label: string;
 }
 
-interface Props {
+interface SelectInputProps {
   label: string;
-  value: number | string;
-  onChange: (value: number) => void;
+  value: string | number | "";
   options: Option[];
+  required?: boolean;
+  onChange: (value: string) => void;
 }
 
 export default function SelectInput({
   label,
   value,
-  onChange,
   options,
-}: Props) {
+  onChange,
+  required = false,
+}: SelectInputProps) {
   return (
     <div>
-      <label className="mb-2 block font-medium">
+      <label className="mb-2 block text-sm font-medium">
         {label}
+        {required && (
+          <span className="text-red-500"> *</span>
+        )}
       </label>
 
       <select
-        className="w-full rounded-lg border p-3"
         value={value}
-        onChange={(e) =>
-          onChange(Number(e.target.value))
-        }
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-300 p-3 outline-none transition focus:border-cyan-500"
       >
-        <option value={0}>
-          Select...
+        <option value="">
+          Select {label}
         </option>
 
         {options.map((option) => (
