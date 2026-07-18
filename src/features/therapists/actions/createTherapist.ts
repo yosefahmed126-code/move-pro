@@ -19,35 +19,15 @@ export async function createTherapist(data: {
       errors: result.error.flatten(),
     };
   }
-if (data.email) {
-  const existing = await prisma.therapist.findFirst({
-    where: {
-      email: data.email,
-    },
-  });
-
-  if (existing) {
-    return {
-      success: false,
-      message: "Email already exists.",
-    };
-  }
-}
 
   await prisma.therapist.create({
     data: {
       name: data.name,
-
       mobile: data.mobile || null,
-
       email: data.email || null,
-
       specialty: data.specialty || null,
-
       notes: data.notes || null,
-
       status: "Active",
-
       branch: {
         connect: {
           id: data.branchId,

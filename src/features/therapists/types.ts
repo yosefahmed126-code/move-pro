@@ -1,21 +1,13 @@
-export interface Therapist {
+export interface TherapistTableItem {
   id: number;
-
   name: string;
-
-  mobile: string | null;
-
-  email: string | null;
-
   specialty: string | null;
-
-  notes: string | null;
-
-  branchId: number;
-
   status: string;
 
-  createdAt: Date;
+  branch: {
+    name: string;
+  };
 
-  updatedAt: Date;
+  patientsCount: number;
+  appointmentsCount: number;
 }
