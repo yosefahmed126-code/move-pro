@@ -34,6 +34,9 @@ export async function getPatients(
   const [patients, total] = await Promise.all([
     prisma.patient.findMany({
       where,
+      include: {
+        branch: true,
+      },
       orderBy: {
         id: "desc",
       },

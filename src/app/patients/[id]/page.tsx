@@ -1,6 +1,7 @@
+import { notFound } from "next/navigation";
+
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{
@@ -8,12 +9,39 @@ interface Props {
   }>;
 }
 
-export default async function PatientDetailsPage({ params }: Props) {
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border bg-white p-4">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className="mt-1 font-medium">{value}</p>
+    </div>
+  );
+}
+
+export default async function PatientDetailsPage({
+  params,
+}: Props) {
   const { id } = await params;
+
+  const patientId = Number(id);
+
+  if (!Number.isInteger(patientId)) {
+    notFound();
+  }
 
   const patient = await prisma.patient.findUnique({
     where: {
-      id: Number(id),
+      id: patientId,
+    },
+    include: {
+      branch: true,
+      package: true,
     },
   });
 
@@ -23,57 +51,46 @@ export default async function PatientDetailsPage({ params }: Props) {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl font-bold">
             {patient.name}
           </h1>
 
-          <p className="mt-2 text-slate-500">
-            Patient Details
+          <p className="text-slate-500">
+            Patient Code: {patient.code}
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-8 shadow-sm">
-          <div className="grid grid-cols-2 gap-6">
-
-            <Info label="Code" value={patient.code} />
-            <Info label="Mobile" value={patient.mobile} />
-
-            <Info label="Branch" value={patient.branch} />
-            <Info label="Therapist" value={patient.therapist} />
-
-            <Info label="Package" value={patient.package} />
-            <Info
-              label="Remaining Sessions"
-              value={patient.remaining.toString()}
-            />
-
-            <Info label="Status" value={patient.status} />
-
-          </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Info label="Code" value={patient.code} />
+          <Info label="Mobile" value={patient.mobile} />
+          <Info
+            label="Therapist"
+            value={patient.therapist ?? "-"}
+          />
+          <Info
+            label="Branch"
+            value={patient.branch.name}
+          />
+          <Info
+            label="Package"
+            value={patient.package?.name ?? "-"}
+          />
+          <Info
+            label="Remaining Sessions"
+            value={patient.remaining}
+          />
+          <Info
+            label="Status"
+            value={patient.status}
+          />
+          <Info
+            label="Created At"
+            value={patient.createdAt.toLocaleDateString()}
+          />
         </div>
       </div>
     </DashboardLayout>
-  );
-}
-
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
-  return (
-    <div>
-      <p className="text-sm text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 text-lg font-medium">
-        {value || "-"}
-      </p>
-    </div>
   );
 }

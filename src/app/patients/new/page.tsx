@@ -12,6 +12,20 @@ export default async function NewPatientPage() {
     },
   });
 
+  const packages = await prisma.package.findMany({
+    where: {
+      status: "Active",
+    },
+    orderBy: {
+      sessions: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      sessions: true,
+    },
+  });
+
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-5xl">
@@ -28,6 +42,7 @@ export default async function NewPatientPage() {
         <PatientForm
           mode="create"
           branches={branches}
+          packages={packages}
         />
       </div>
     </DashboardLayout>

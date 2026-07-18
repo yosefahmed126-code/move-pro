@@ -38,7 +38,7 @@ export default function PatientsTable({ patients }: Props) {
               <td className="px-4 py-3">{patient.therapist}</td>
               <td className="px-4 py-3">{patient.package}</td>
               <td className="px-4 py-3 text-center">{patient.remaining}</td>
-              <td className="px-4 py-3">{patient.branch}</td>
+              <td className="px-4 py-3">{patient.branch.name}</td>
               <td className="px-4 py-3 text-center">
                 <PatientStatusBadge status={patient.status} />
               </td>

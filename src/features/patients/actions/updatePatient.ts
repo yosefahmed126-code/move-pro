@@ -9,6 +9,7 @@ interface UpdatePatientData {
   name: string;
   mobile: string;
   branchId: number;
+  packageId: number;
   therapist?: string;
 }
 
@@ -19,6 +20,19 @@ export async function updatePatient(data: UpdatePatientData) {
     return {
       success: false,
       errors: result.error.flatten(),
+    };
+  }
+
+  const selectedPackage = await prisma.package.findUnique({
+    where: {
+      id: data.packageId,
+    },
+  });
+
+  if (!selectedPackage) {
+    return {
+      success: false,
+      message: "Package not found.",
     };
   }
 
@@ -36,6 +50,14 @@ export async function updatePatient(data: UpdatePatientData) {
           id: data.branchId,
         },
       },
+
+      package: {
+        connect: {
+          id: data.packageId,
+        },
+      },
+
+      remaining: selectedPackage.sessions,
     },
   });
 

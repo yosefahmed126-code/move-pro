@@ -11,6 +11,12 @@ export const patientSchema = z.object({
     })
     .min(1, "Branch is required"),
 
+  packageId: z
+    .number({
+      required_error: "Package is required",
+    })
+    .min(1, "Package is required"),
+
   therapist: z.string().optional(),
 });
 

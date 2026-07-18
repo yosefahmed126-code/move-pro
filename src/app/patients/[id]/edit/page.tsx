@@ -20,6 +20,7 @@ export default async function EditPatientPage({
     },
     include: {
       branch: true,
+      package: true,
     },
   });
 
@@ -33,6 +34,20 @@ export default async function EditPatientPage({
     },
     orderBy: {
       name: "asc",
+    },
+  });
+
+  const packages = await prisma.package.findMany({
+    where: {
+      status: "Active",
+    },
+    orderBy: {
+      sessions: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      sessions: true,
     },
   });
 
@@ -52,12 +67,14 @@ export default async function EditPatientPage({
         <PatientForm
           mode="edit"
           branches={branches}
+          packages={packages}
           patient={{
             id: patient.id,
             name: patient.name,
             mobile: patient.mobile,
             therapist: patient.therapist,
             branchId: patient.branchId,
+            packageId: patient.packageId,
           }}
         />
       </div>

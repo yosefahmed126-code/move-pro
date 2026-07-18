@@ -13,12 +13,19 @@ interface Props {
     name: string;
   }[];
 
+  packages: {
+    id: number;
+    name: string;
+    sessions: number;
+  }[];
+
   patient?: {
     id: number;
     name: string;
     mobile: string;
     therapist: string | null;
     branchId: number;
+    packageId: number | null;
   };
 }
 
@@ -26,17 +33,19 @@ export default function PatientForm({
   mode,
   patient,
   branches,
+  packages,
 }: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
- const [form, setForm] = useState({
-  name: patient?.name ?? "",
-  mobile: patient?.mobile ?? "",
-  branchId: patient?.branchId ?? 0,
-  therapist: patient?.therapist ?? "",
-});
+  const [form, setForm] = useState({
+    name: patient?.name ?? "",
+    mobile: patient?.mobile ?? "",
+    branchId: patient?.branchId ?? 0,
+    packageId: patient?.packageId ?? 0,
+    therapist: patient?.therapist ?? "",
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,32 +114,60 @@ export default function PatientForm({
         </div>
 
         <div>
-  <label className="mb-2 block font-medium">
-    Branch
-  </label>
+          <label className="mb-2 block font-medium">
+            Branch
+          </label>
 
-  <select
-    className="w-full rounded-lg border p-3"
-    value={form.branchId}
-    onChange={(e) =>
-      setForm({
-        ...form,
-        branchId: Number(e.target.value),
-      })
-    }
-  >
-    <option value={0}>Select Branch</option>
+          <select
+            className="w-full rounded-lg border p-3"
+            value={form.branchId}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                branchId: Number(e.target.value),
+              })
+            }
+          >
+            <option value={0}>Select Branch</option>
 
-    {branches.map((branch) => (
-      <option
-        key={branch.id}
-        value={branch.id}
-      >
-        {branch.name}
-      </option>
-    ))}
-  </select>
-</div>
+            {branches.map((branch) => (
+              <option
+                key={branch.id}
+                value={branch.id}
+              >
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-medium">
+            Package
+          </label>
+
+          <select
+            className="w-full rounded-lg border p-3"
+            value={form.packageId}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                packageId: Number(e.target.value),
+              })
+            }
+          >
+            <option value={0}>Select Package</option>
+
+            {packages.map((pkg) => (
+              <option
+                key={pkg.id}
+                value={pkg.id}
+              >
+                {pkg.name} ({pkg.sessions} Sessions)
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="mb-2 block font-medium">

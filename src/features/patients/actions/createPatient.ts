@@ -7,6 +7,7 @@ export async function createPatient(data: {
   name: string;
   mobile: string;
   branchId: number;
+  packageId: number;
   therapist?: string;
 }) {
   const result = patientSchema.safeParse(data);
@@ -18,15 +19,32 @@ export async function createPatient(data: {
     };
   }
 
-  const lastPatient = await prisma.patient.findFirst({
-    orderBy: {
-      id: "desc",
+  const selectedPackage = await prisma.package.findUnique({
+    where: {
+      id: data.packageId,
     },
   });
 
-  const nextNumber = (lastPatient?.id ?? 0) + 1;
+  if (!selectedPackage) {
+    return {
+      success: false,
+      message: "Package not found.",
+    };
+  }
 
-  const code = `MP-${nextNumber.toString().padStart(4, "0")}`;
+  const lastPatient = await prisma.patient.findFirst({
+    orderBy: {
+      code: "desc",
+    },
+  });
+
+  const lastCode = lastPatient
+    ? parseInt(lastPatient.code, 10)
+    : 0;
+
+  const code = (lastCode + 1)
+    .toString()
+    .padStart(3, "0");
 
   await prisma.patient.create({
     data: {
@@ -41,7 +59,13 @@ export async function createPatient(data: {
         },
       },
 
-      remaining: 0,
+      package: {
+        connect: {
+          id: data.packageId,
+        },
+      },
+
+      remaining: selectedPackage.sessions,
       status: "Active",
     },
   });

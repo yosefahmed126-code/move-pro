@@ -42,15 +42,12 @@ export default function DeletePatientDialog({
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          title="Delete"
-          className="rounded-md p-2 text-red-600 transition hover:bg-red-50"
-        >
-          <Trash2 size={18} />
-        </button>
-      </DialogTrigger>
+      <DialogTrigger
+  className="rounded-md p-2 text-red-600 transition hover:bg-red-50"
+  title="Delete"
+>
+  <Trash2 size={18} />
+</DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
@@ -65,12 +62,12 @@ export default function DeletePatientDialog({
         </DialogHeader>
 
         <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">
-              Cancel
-            </Button>
-          </DialogClose>
-
+        <DialogTrigger
+  className="rounded-md p-2 text-red-600 transition hover:bg-red-50"
+  title="Delete"
+>
+  <Trash2 size={18} />
+</DialogTrigger>
           <Button
             variant="destructive"
             onClick={handleDelete}

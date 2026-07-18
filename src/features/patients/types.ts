@@ -12,6 +12,8 @@ export interface Patient {
   therapist?: string | null;
   package?: string | null;
   remaining: number;
-  branch: string;
-  status: string;
+  branch: {
+  id: number;
+  name: string;
+};  status: string;
 }
