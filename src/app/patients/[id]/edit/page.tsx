@@ -25,9 +25,10 @@ export default async function EditPatientPage({
       id: Number(id),
     },
     include: {
-      branch: true,
-      package: true,
-    },
+  branch: true,
+  package: true,
+  therapist: true,
+},
   });
 
   if (!patient) {
@@ -76,13 +77,21 @@ export default async function EditPatientPage({
           packages={packages}
           therapists={therapists}
           patient={{
-            id: patient.id,
-            name: patient.name,
-            mobile: patient.mobile,
-            therapist: patient.therapist,
-            branchId: patient.branchId,
-            packageId: patient.packageId,
-          }}
+  id: patient.id,
+  name: patient.name,
+  gender: patient.gender,
+  birthDate: patient.birthDate
+    ? patient.birthDate.toISOString().split("T")[0]
+    : "",
+  mobile: patient.mobile,
+  mobile2: patient.mobile2,
+  email: patient.email,
+  nationalId: patient.nationalId,
+  address: patient.address,
+  therapistId: patient.therapistId,
+  branchId: patient.branchId,
+  packageId: patient.packageId,
+}}
         />
       </div>
     </DashboardLayout>

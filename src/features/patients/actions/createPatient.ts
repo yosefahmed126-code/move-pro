@@ -1,18 +1,27 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { patientSchema } from "../schemas/patient.schema";
+import { PatientSchema } from "@/lib/validators/patient";
 
 interface CreatePatientData {
   name: string;
+  gender?: string;
+  birthDate?: string;
+
   mobile: string;
+  mobile2?: string;
+
+  email?: string;
+  nationalId?: string;
+  address?: string;
+
   branchId: number;
   packageId: number | null;
   therapistId: number | null;
 }
 
 export async function createPatient(data: CreatePatientData) {
-  const result = patientSchema.safeParse(data);
+  const result = PatientSchema.safeParse(data);
 
   if (!result.success) {
     return {
@@ -22,32 +31,31 @@ export async function createPatient(data: CreatePatientData) {
   }
 
   // Check duplicate mobile
-  const existing = await prisma.patient.findFirst({
+  const existingPatient = await prisma.patient.findFirst({
     where: {
       mobile: data.mobile,
     },
   });
 
-  if (existing) {
+  if (existingPatient) {
     return {
       success: false,
       message: "Patient with this mobile number already exists.",
     };
   }
 
-  // Get selected package
   if (!data.packageId) {
-  return {
-    success: false,
-    message: "Please select a package.",
-  };
-}
+    return {
+      success: false,
+      message: "Please select a package.",
+    };
+  }
 
-const selectedPackage = await prisma.package.findUnique({
-  where: {
-    id: data.packageId,
-  },
-});
+  const selectedPackage = await prisma.package.findUnique({
+    where: {
+      id: data.packageId,
+    },
+  });
 
   if (!selectedPackage) {
     return {
@@ -56,7 +64,7 @@ const selectedPackage = await prisma.package.findUnique({
     };
   }
 
-  // Generate patient code based on last id
+  // Generate patient code
   const lastPatient = await prisma.patient.findFirst({
     orderBy: {
       id: "desc",
@@ -66,41 +74,52 @@ const selectedPackage = await prisma.package.findUnique({
   const nextId = (lastPatient?.id ?? 0) + 1;
   const code = `MP-${String(nextId).padStart(4, "0")}`;
 
-  // Create patient
   await prisma.patient.create({
-  data: {
-    code,
-    name: data.name,
-    mobile: data.mobile,
+    data: {
+      code,
 
-    branch: {
-      connect: {
-        id: data.branchId,
+      name: data.name,
+      gender: data.gender || null,
+
+      birthDate: data.birthDate
+        ? new Date(data.birthDate)
+        : null,
+
+      mobile: data.mobile,
+      mobile2: data.mobile2 || null,
+
+      email: data.email || null,
+      nationalId: data.nationalId || null,
+      address: data.address || null,
+
+      branch: {
+        connect: {
+          id: data.branchId,
+        },
       },
+
+      package: {
+        connect: {
+          id: data.packageId,
+        },
+      },
+
+      therapist: data.therapistId
+        ? {
+            connect: {
+              id: data.therapistId,
+            },
+          }
+        : undefined,
+
+      remaining: selectedPackage.sessions,
+
+      status: "Active",
     },
-
-    package: data.packageId
-      ? {
-          connect: {
-            id: data.packageId,
-          },
-        }
-      : undefined,
-
-    therapist: data.therapistId
-      ? {
-          connect: {
-            id: data.therapistId,
-          },
-        }
-      : undefined,
-
-    remaining: selectedPackage.sessions,
-    status: "Active",
-  },
-});
+  });
 
   return {
     success: true,
+    message: "Patient created successfully.",
   };
 }

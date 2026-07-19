@@ -2,19 +2,29 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { patientSchema } from "../schemas/patient.schema";
+import { PatientSchema } from "@/lib/validators/patient";
 
 interface UpdatePatientData {
   id: number;
+
   name: string;
+  gender?: string;
+  birthDate?: string;
+
   mobile: string;
+  mobile2?: string;
+
+  email?: string;
+  nationalId?: string;
+  address?: string;
+
   branchId: number;
   packageId: number | null;
   therapistId: number | null;
 }
 
 export async function updatePatient(data: UpdatePatientData) {
-  const result = patientSchema.safeParse(data);
+  const result = PatientSchema.safeParse(data);
 
   if (!result.success) {
     return {
@@ -23,8 +33,8 @@ export async function updatePatient(data: UpdatePatientData) {
     };
   }
 
-  // منع تكرار رقم الموبايل
-  const existing = await prisma.patient.findFirst({
+  // Check duplicate mobile
+  const existingPatient = await prisma.patient.findFirst({
     where: {
       mobile: data.mobile,
       NOT: {
@@ -33,7 +43,7 @@ export async function updatePatient(data: UpdatePatientData) {
     },
   });
 
-  if (existing) {
+  if (existingPatient) {
     return {
       success: false,
       message: "Patient with this mobile number already exists.",
@@ -64,9 +74,25 @@ export async function updatePatient(data: UpdatePatientData) {
     where: {
       id: data.id,
     },
+
     data: {
       name: data.name,
+
+      gender: data.gender || null,
+
+      birthDate: data.birthDate
+        ? new Date(data.birthDate)
+        : null,
+
       mobile: data.mobile,
+
+      mobile2: data.mobile2 || null,
+
+      email: data.email || null,
+
+      nationalId: data.nationalId || null,
+
+      address: data.address || null,
 
       branch: {
         connect: {

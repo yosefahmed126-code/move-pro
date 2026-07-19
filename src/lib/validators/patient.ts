@@ -4,7 +4,7 @@ export const PatientSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(3, "Name must contain at least 3 characters"),
+    .min(3, "Patient name must be at least 3 characters"),
 
   gender: z.string().optional(),
 
@@ -20,7 +20,7 @@ export const PatientSchema = z.object({
 
   email: z
     .string()
-    .email("Invalid email")
+    .email("Invalid email address")
     .or(z.literal(""))
     .optional(),
 
@@ -28,13 +28,17 @@ export const PatientSchema = z.object({
 
   address: z.string().optional(),
 
-  therapistId: z.number().nullable(),
+  branchId: z
+    .number()
+    .min(1, "Please select a branch"),
 
-  branchId: z.number({
-    error: "Please select a branch",
-  }),
+  packageId: z
+    .number()
+    .nullable(),
 
-  packageId: z.number().nullable(),
+  therapistId: z
+    .number()
+    .nullable(),
 });
 
 export type PatientFormData = z.infer<typeof PatientSchema>;

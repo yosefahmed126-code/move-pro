@@ -88,27 +88,26 @@ export default function PatientForm({
   const selectedBranch = watch("branchId");
 
 const filteredTherapists = useMemo(() => {
-  return therapists.filter(
-    (t) => t.branchId === selectedBranch
-  );
+  return (therapists ?? []).filter(
+  (t) => t.branchId === selectedBranch
+);
 }, [selectedBranch, therapists]);
 
 const onSubmit = async (data: PatientFormData) => {
 
   const result =
-    mode === "create"
-      ? await createPatient({
-          ...data,
-          packageId: data.packageId ?? 0,
-          therapist: undefined,
-        })
-      : await updatePatient({
-          id: patient!.id,
-          ...data,
-          packageId: data.packageId ?? 0,
-          therapist: undefined,
-        });
-
+  mode === "create"
+    ? await createPatient({
+        ...data,
+        packageId: data.packageId,
+        therapistId: data.therapistId,
+      })
+    : await updatePatient({
+        id: patient!.id,
+        ...data,
+        packageId: data.packageId,
+        therapistId: data.therapistId,
+      });
   if (!result.success) {
     toast.error(result.message);
     return;
