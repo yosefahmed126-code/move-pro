@@ -31,8 +31,11 @@ model Patient {
   packageId Int?
   package   Package? @relation(fields: [packageId], references: [id])
 
-  remaining Int    @default(0)
-  status    String @default("Active")
+  remaining Int @default(0)
+
+  usedExcuses Int @default(0)
+
+  status String @default("Active")
 
   appointments Appointment[]
 
@@ -75,6 +78,8 @@ model Therapist {
 model Appointment {
   id Int @id @default(autoincrement())
 
+  code String @unique
+
   patientId Int
   patient Patient @relation(fields: [patientId], references: [id])
 
@@ -83,6 +88,9 @@ model Appointment {
 
   branchId Int
   branch Branch @relation(fields: [branchId], references: [id])
+
+  createdById Int?
+  createdBy User? @relation(fields: [createdById], references: [id])
 
   date DateTime
 
@@ -104,7 +112,7 @@ enum AppointmentStatus {
   CHECKED_IN
   EXCUSED
   MISSED
-  CANCELLED
+  CANCELLED_BY_MANAGER
 }
 
 model Package {
@@ -180,7 +188,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+   
+  appointments Appointment[]
+  
   @@index([roleId])
   @@index([branchId])
   @@index([status])

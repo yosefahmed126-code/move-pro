@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { PatientSchema } from "@/lib/validators/patient";
+import { generateCode } from "@/lib/utils/generateCode";
 
 interface CreatePatientData {
   name: string;
@@ -64,15 +65,11 @@ export async function createPatient(data: CreatePatientData) {
     };
   }
 
-  // Generate patient code
-  const lastPatient = await prisma.patient.findFirst({
-    orderBy: {
-      id: "desc",
-    },
-  });
-
-  const nextId = (lastPatient?.id ?? 0) + 1;
-  const code = `MP-${String(nextId).padStart(4, "0")}`;
+  
+  const code = await generateCode(
+  "patient",
+  "MP"
+);
 
   await prisma.patient.create({
     data: {
