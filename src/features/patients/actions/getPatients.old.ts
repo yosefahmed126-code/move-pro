@@ -2,31 +2,16 @@
 
 import { prisma } from "@/lib/prisma";
 
-export async function getPatients(search = "") {
+export async function getPatients() {
   return prisma.patient.findMany({
-    where: search
-      ? {
-          OR: [
-            {
-              name: {
-                contains: search,
-              },
-            },
-            {
-              mobile: {
-                contains: search,
-              },
-            },
-            {
-              code: {
-                contains: search,
-              },
-            },
-          ],
-        }
-      : {},
     orderBy: {
-      id: "desc",
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      remaining: true,
+      packageId: true,
     },
   });
 }

@@ -1,119 +1,42 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { calculateEndTime } from "@/lib/appointments/time";
-import { isTherapistAvailable } from "@/lib/appointments/availability";
+import { generateAppointmentCode } from "@/lib/appointments/generateAppointmentCode";
 
 import {
-  AppointmentSchema,
-  type AppointmentFormData,
+  appointmentSchema,
+  AppointmentInput,
 } from "../schemas/appointment.schema";
 
-export async function createAppointment(
-  data: AppointmentFormData
-) {
-  const result = AppointmentSchema.safeParse(data);
+export async function createAppointment(data: AppointmentInput) {
+  const parsed = appointmentSchema.safeParse(data);
 
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten(),
-    };
+  if (!parsed.success) {
+    throw new Error("Invalid appointment data");
   }
+const existingAppointment = await prisma.appointment.findFirst({
+  where: {
+    therapistId: parsed.data.therapistId,
+    date: parsed.data.date,
+    startTime: parsed.data.startTime,
+  },
+});
 
-  const patient = await prisma.patient.findUnique({
-    where: {
-      id: data.patientId,
-    },
-  });
-
-  if (!patient) {
-    return {
-      success: false,
-      message: "Patient not found.",
-    };
-  }
-
-  const therapist = await prisma.therapist.findUnique({
-    where: {
-      id: data.therapistId,
-    },
-  });
-
-  if (!therapist) {
-    return {
-      success: false,
-      message: "Therapist not found.",
-    };
-  }
-
-  const branch = await prisma.branch.findUnique({
-    where: {
-      id: data.branchId,
-    },
-  });
-
-  if (!branch) {
-    return {
-      success: false,
-      message: "Branch not found.",
-    };
-  }
-
-  const startTime = new Date(`${data.date}T${data.startTime}`);
-  
-  const endTime = calculateEndTime(
-  startTime,
-  data.duration
-);
- const available = await isTherapistAvailable(
-  data.therapistId,
-  startTime,
-  endTime
-);
-
-if (!available) {
-  return {
-    success: false,
-    message: "This time slot is already booked.",
-  };
+if (existingAppointment) {
+  throw new Error(
+    "This therapist already has an appointment at this time."
+  );
 }
 
-const lastAppointment = await prisma.appointment.findFirst({
-  orderBy: {
-    id: "desc",
-  },
-});
+  const code = await generateAppointmentCode();
 
-const nextId = (lastAppointment?.id ?? 0) + 1;
-
-const code = `AP-${String(nextId).padStart(6, "0")}`;
-
-const appointment = await prisma.appointment.create({
+await prisma.appointment.create({
   data: {
+    ...parsed.data,
     code,
-
-    patientId: data.patientId,
-
-    therapistId: data.therapistId,
-
-    branchId: data.branchId,
-
-    date: new Date(data.date),
-
-    startTime,
-
-    endTime,
-
-    duration: data.duration,
-
-    notes: data.notes,
   },
 });
 
-return {
-  success: true,
-  message: "Appointment created successfully.",
-  appointment,
-}; 
+  revalidatePath("/schedule");
 }

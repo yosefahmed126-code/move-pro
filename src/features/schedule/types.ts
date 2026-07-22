@@ -5,6 +5,16 @@ export interface TherapistColumn {
   name: string;
 }
 
+export interface PatientOption {
+  id: number;
+  name: string;
+  branchId: number;
+  remaining: number;
+  package: {
+    name: string;
+  } | null;
+}
+
 export interface ScheduleCellProps {
   appointment?: ScheduleAppointment;
 }
@@ -12,4 +22,5 @@ export interface ScheduleCellProps {
 export interface ScheduleGridProps {
   therapists: TherapistColumn[];
   appointments: ScheduleAppointment[];
+  patients: PatientOption[];
 }

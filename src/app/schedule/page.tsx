@@ -1,20 +1,15 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { prisma } from "@/lib/prisma";
 
 import { ScheduleHeader } from "@/features/schedule/components/ScheduleHeader";
 import { ScheduleGrid } from "@/features/schedule/components/ScheduleGrid";
-import { getSchedule } from "@/features/appointments/actions/getSchedule";
+import { getSchedule } from "@/features/schedule/actions/getSchedule";
 
 export default async function SchedulePage() {
-  const today = new Date();
-
-  const therapists = await prisma.therapist.findMany({
-    orderBy: {
-      name: "asc",
-    },
-  });
-
-  const appointments = await getSchedule(today);
+  const {
+    therapists,
+    appointments,
+    patients,
+  } = await getSchedule();
 
   return (
     <DashboardLayout>
@@ -24,6 +19,7 @@ export default async function SchedulePage() {
         <ScheduleGrid
           therapists={therapists}
           appointments={appointments}
+          patients={patients}
         />
       </div>
     </DashboardLayout>

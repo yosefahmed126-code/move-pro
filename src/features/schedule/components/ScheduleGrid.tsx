@@ -7,6 +7,7 @@ import type { ScheduleGridProps } from "../types";
 export function ScheduleGrid({
   therapists,
   appointments,
+  patients,
 }: ScheduleGridProps) {
   const slots = generateTimeSlots();
 
@@ -32,7 +33,7 @@ export function ScheduleGrid({
             {therapist.name}
           </div>
         ))}
-
+           
         {slots.map((slot) => (
           <Fragment key={slot}>
             <div className="sticky left-0 border-r border-b bg-white p-4 font-medium">
@@ -47,6 +48,10 @@ export function ScheduleGrid({
     therapist.id,
     slot
   )}
+  therapist={therapist}
+  slot={slot}
+  date={new Date()}
+  patients={patients}
 />
             ))}
           </Fragment>

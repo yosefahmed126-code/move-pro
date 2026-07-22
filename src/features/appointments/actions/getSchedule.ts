@@ -47,6 +47,21 @@ export async function getSchedule(date: Date) {
 
 console.log(JSON.stringify(appointments, null, 2));
 
-return appointments;
-  return appointments;
+return {
+  therapists,
+  appointments,
+  patients: await prisma.patient.findMany({
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+  id: true,
+  name: true,
+  branchId: true,
+  remaining: true,
+  package: {
+    select: {
+      name: true,
+    },
+  },
 }
