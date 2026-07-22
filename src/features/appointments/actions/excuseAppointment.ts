@@ -1,16 +1,16 @@
 "use server";
 
-import { changeAppointmentStatus } from "../services/appointmentStatus.service";
 import { AppointmentStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { changeAppointmentStatus } from "../services/appointmentStatus.service";
 
-export async function checkInAppointment(
+export async function excuseAppointment(
   appointmentId: number
 ) {
   await changeAppointmentStatus({
-  appointmentId,
-  status: AppointmentStatus.CHECKED_IN,
-});
+    appointmentId,
+    status: AppointmentStatus.EXCUSED,
+  });
 
   revalidatePath("/schedule");
 }

@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { checkInAppointment } from "@/features/appointments/actions/checkInAppointment";
 import type { ScheduleAppointment } from "@/features/appointments/types";
+import { excuseAppointment } from "@/features/appointments/actions/excuseAppointment";
+import { useState } from "react";
+
 
 interface Props {
   open: boolean;
@@ -20,6 +23,7 @@ export function AppointmentDetailsDialog({
   onClose,
   appointment,
 }: Props) {
+  const [error, setError] = useState("");
   return (
     <Dialog
       open={open}
@@ -33,7 +37,11 @@ export function AppointmentDetailsDialog({
             Appointment Details
           </DialogTitle>
         </DialogHeader>
-
+{error && (
+  <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+    {error}
+  </div>
+)}
 <div>
   <p className="text-sm text-muted-foreground">
     Appointment Code
@@ -137,11 +145,27 @@ export function AppointmentDetailsDialog({
 </button>
 
   <button
-    type="button"
-    className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-yellow-600"
-  >
-    Excuse
-  </button>
+  type="button"
+  disabled={appointment.status !== "BOOKED"}
+ onClick={async () => {
+  try {
+    setError("");
+
+    await excuseAppointment(appointment.id);
+
+    onClose();
+  } catch (error) {
+    if (error instanceof Error) {
+      setError(error.message);
+    } else {
+      setError("Something went wrong.");
+    }
+  }
+}}
+  className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  Excuse
+</button>
 
   <button
     type="button"
