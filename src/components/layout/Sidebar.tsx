@@ -9,6 +9,7 @@ import {
   FileText,
   Settings,
   Stethoscope,
+  Building2,
 } from "lucide-react";
 
 const menuItems = [
@@ -23,8 +24,8 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: "Doctor Calendar",
-    href: "/calendar",
+    title: "schedule",
+    href: "/schedule",
     icon: CalendarDays,
   },
   {
@@ -37,6 +38,12 @@ const menuItems = [
     href: "/payments",
     icon: CreditCard,
   },
+
+{
+  title: "Branches",
+  href: "/branches",
+  icon: Building2,
+},
   {
     title: "Reports",
     href: "/reports",
