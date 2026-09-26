@@ -1,17 +1,20 @@
+import { BranchStatus } from "@prisma/client";
+
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PageHeader from "@/components/layout/PageHeader";
 import TherapistForm from "@/features/therapists/components/TherapistForm";
 import { prisma } from "@/lib/prisma";
 
 export default async function NewTherapistPage() {
-  const branches = await prisma.branch.findMany({
-    where: {
-      status: "Active",
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const branches =
+    await prisma.branch.findMany({
+      where: {
+        status: BranchStatus.ACTIVE,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
   return (
     <DashboardLayout>

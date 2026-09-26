@@ -1,7 +1,9 @@
+import { BranchStatus } from "@prisma/client";
+import { notFound } from "next/navigation";
+
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TherapistForm from "@/features/therapists/components/TherapistForm";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{
@@ -14,12 +16,20 @@ export default async function EditTherapistPage({
 }: Props) {
   const { id } = await params;
 
-  const therapist = await prisma.therapist.findUnique({
+ const therapist =
+  await prisma.therapist.findUnique({
     where: {
       id: Number(id),
     },
+
     include: {
       branch: true,
+
+      workingHours: {
+        orderBy: {
+          dayOfWeek: "asc",
+        },
+      },
     },
   });
 
@@ -27,14 +37,15 @@ export default async function EditTherapistPage({
     notFound();
   }
 
-  const branches = await prisma.branch.findMany({
-    where: {
-      status: "Active",
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const branches =
+    await prisma.branch.findMany({
+      where: {
+        status: BranchStatus.ACTIVE,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
   return (
     <DashboardLayout>
@@ -60,6 +71,18 @@ export default async function EditTherapistPage({
             specialty: therapist.specialty,
             notes: therapist.notes,
             branchId: therapist.branchId,
+           workingHours:
+  therapist.workingHours.map(
+    (workingHour) => ({
+      id: workingHour.id,
+      dayOfWeek:
+        workingHour.dayOfWeek,
+      startTime:
+        workingHour.startTime,
+      endTime:
+        workingHour.endTime,
+    })
+  ),
           }}
         />
       </div>

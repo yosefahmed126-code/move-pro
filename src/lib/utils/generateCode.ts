@@ -1,23 +1,83 @@
 import { prisma } from "@/lib/prisma";
 
+type CodeModel =
+  | "patient"
+  | "appointment"
+  | "branch"
+  | "therapist";
+
 export async function generateCode(
-  model: "patient" | "appointment",
+  model: CodeModel,
   prefix: string
 ) {
-  const lastRecord =
-    model === "patient"
-      ? await prisma.patient.findFirst({
+  let lastId = 0;
+
+  switch (model) {
+    case "patient": {
+      const lastRecord =
+        await prisma.patient.findFirst({
           orderBy: {
             id: "desc",
           },
-        })
-      : await prisma.appointment.findFirst({
-          orderBy: {
-            id: "desc",
+          select: {
+            id: true,
           },
         });
 
-  const nextId = (lastRecord?.id ?? 0) + 1;
+      lastId = lastRecord?.id ?? 0;
+      break;
+    }
 
-  return `${prefix}-${String(nextId).padStart(6, "0")}`;
+    case "appointment": {
+      const lastRecord =
+        await prisma.appointment.findFirst({
+          orderBy: {
+            id: "desc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      lastId = lastRecord?.id ?? 0;
+      break;
+    }
+
+    case "branch": {
+      const lastRecord =
+        await prisma.branch.findFirst({
+          orderBy: {
+            id: "desc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      lastId = lastRecord?.id ?? 0;
+      break;
+    }
+
+    case "therapist": {
+      const lastRecord =
+        await prisma.therapist.findFirst({
+          orderBy: {
+            id: "desc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      lastId = lastRecord?.id ?? 0;
+      break;
+    }
+  }
+
+  const nextId = lastId + 1;
+
+  return `${prefix}-${String(nextId).padStart(
+    6,
+    "0"
+  )}`;
 }

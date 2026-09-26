@@ -1,12 +1,14 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { BranchStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+
+import { prisma } from "@/lib/prisma";
 
 interface Data {
   id: number;
   name: string;
-  status: string;
+  status: BranchStatus;
 }
 
 export async function updateBranch(data: Data) {

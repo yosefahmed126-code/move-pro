@@ -1,9 +1,14 @@
+import { PatientStatus } from "@prisma/client";
+
 interface Props {
-  status: "Active" | "Inactive";
+  status: PatientStatus;
 }
 
-export default function PatientStatusBadge({ status }: Props) {
-  const isActive = status === "Active";
+export default function PatientStatusBadge({
+  status,
+}: Props) {
+  const isActive =
+    status === PatientStatus.ACTIVE;
 
   return (
     <span
@@ -13,7 +18,7 @@ export default function PatientStatusBadge({ status }: Props) {
           : "bg-red-100 text-red-700"
       }`}
     >
-      {status}
+      {isActive ? "Active" : "Inactive"}
     </span>
   );
 }

@@ -6,10 +6,10 @@ export async function getPackages() {
   const packages = await prisma.package.findMany({
     include: {
       _count: {
-        select: {
-          patients: true,
-        },
-      },
+  select: {
+    patientPackages: true,
+  },
+},
     },
     orderBy: {
       id: "desc",
@@ -18,6 +18,6 @@ export async function getPackages() {
 
   return packages.map((pkg) => ({
     ...pkg,
-    patientsCount: pkg._count.patients,
+    patientsCount: pkg._count.patientPackages,
   }));
 }

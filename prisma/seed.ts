@@ -1,32 +1,35 @@
-import { PrismaClient, AppointmentStatus } from "@prisma/client";
+import { PrismaClient, UserRole, PackageStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Role
-  const adminRole = await prisma.role.upsert({
-    where: { name: "Administrator" },
-    update: {},
-    create: {
-      name: "Administrator",
-      description: "System Administrator",
-    },
-  });
+  console.log("🌱 Seeding database...");
 
-  // Branch
+  // ===========================
+  // Password
+  // ===========================
+  const passwordHash = await bcrypt.hash("123456", 10);
+
+  // ===========================
+  // Main Branch
+  // ===========================
   const branch = await prisma.branch.upsert({
-    where: { name: "Main Branch" },
+    where: {
+      code: "MAIN",
+    },
     update: {},
     create: {
+      code: "MAIN",
       name: "Main Branch",
+      isMain: true,
     },
   });
 
-  // User
-  const password = await bcrypt.hash("123456", 10);
-
-  const admin = await prisma.user.upsert({
+  // ===========================
+  // Super Admin
+  // ===========================
+  await prisma.user.upsert({
     where: {
       username: "admin",
     },
@@ -34,110 +37,103 @@ async function main() {
     create: {
       fullName: "System Administrator",
       username: "admin",
-      password,
-      roleId: adminRole.id,
+      passwordHash,
+      role: UserRole.SUPER_ADMIN,
       branchId: branch.id,
     },
   });
 
+  // ===========================
   // Therapists
-  const therapist1 = await prisma.therapist.create({
-    data: {
-      name: "M.Maher",
-      branchId: branch.id,
-    },
-  });
+  // ===========================
 
-  const therapist2 = await prisma.therapist.create({
-    data: {
+  const therapists = [
+    {
+      code: "TH-001",
+      name: "M. Maher",
+    },
+    {
+      code: "TH-002",
       name: "Mostafa",
-      branchId: branch.id,
     },
-  });
-
-  const therapist3 = await prisma.therapist.create({
-    data: {
+    {
+      code: "TH-003",
       name: "Yassmin",
-      branchId: branch.id,
     },
-  });
+  ];
 
+  for (const therapist of therapists) {
+    await prisma.therapist.upsert({
+      where: {
+        code: therapist.code,
+      },
+      update: {},
+      create: {
+        code: therapist.code,
+        name: therapist.name,
+        branchId: branch.id,
+      },
+    });
+  }
+
+  // ===========================
   // Packages
-  const package4 = await prisma.package.create({
-    data: {
+  // ===========================
+
+  const packages = [
+    {
+      name: "1 Session",
+      sessions: 1,
+      price: 200,
+      allowedExcuses: 0,
+    },
+    {
       name: "4 Sessions",
       sessions: 4,
       price: 600,
       allowedExcuses: 1,
     },
-  });
-
-  const package8 = await prisma.package.create({
-    data: {
+    {
+      name: "6 Sessions",
+      sessions: 6,
+      price: 850,
+      allowedExcuses: 2,
+    },
+    {
       name: "8 Sessions",
       sessions: 8,
       price: 1100,
       allowedExcuses: 3,
     },
-  });
-
-  await prisma.package.create({
-    data: {
+    {
       name: "12 Sessions",
       sessions: 12,
       price: 1500,
       allowedExcuses: 4,
     },
-  });
+  ];
 
-  // Patient
-  const patient = await prisma.patient.create({
-    data: {
-      code: "MP-000001",
-      name: "Ahmed Ali",
-      mobile: "01000000000",
+  for (const pkg of packages) {
+    await prisma.package.upsert({
+      where: {
+        name: pkg.name,
+      },
+      update: {},
+      create: {
+        ...pkg,
+        status: PackageStatus.ACTIVE,
+      },
+    });
+  }
 
-      therapistId: therapist1.id,
-      branchId: branch.id,
-
-      packageId: package8.id,
-      remaining: 8,
-    },
-  });
-
-  // Appointment
-  const date = new Date();
-
-  const startTime = new Date(date);
-  startTime.setHours(9, 0, 0, 0);
-
-  const endTime = new Date(startTime);
-  endTime.setMinutes(endTime.getMinutes() + 40);
-
-  await prisma.appointment.create({
-    data: {
-      code: "AP-000001",
-
-      patientId: patient.id,
-      therapistId: therapist1.id,
-      branchId: branch.id,
-      createdById: admin.id,
-
-      date,
-
-      startTime,
-      endTime,
-
-      duration: 40,
-      status: AppointmentStatus.BOOKED,
-    },
-  });
-
-  console.log("🌱 Seed completed successfully.");
+  console.log("✅ Database seeded successfully.");
 }
 
 main()
-  .catch(console.error)
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(async () => {
     await prisma.$disconnect();
   });

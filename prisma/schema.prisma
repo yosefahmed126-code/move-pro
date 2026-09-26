@@ -12,7 +12,7 @@ model Patient {
   code String @unique
 
   name      String
-  gender    String?
+  gender    Gender?
   birthDate DateTime?
 
   mobile  String
@@ -22,39 +22,27 @@ model Patient {
   nationalId String?
   address    String?
 
-  therapistId Int?
-  therapist   Therapist? @relation(fields: [therapistId], references: [id])
+  patientPackages PatientPackage[]
 
-  branchId Int
-  branch   Branch @relation(fields: [branchId], references: [id])
-
-  packageId Int?
-  package   Package? @relation(fields: [packageId], references: [id])
-
-  remaining Int @default(0)
-
-  usedExcuses Int @default(0)
-
-  status String @default("Active")
-
-  appointments Appointment[]
+  status PatientStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([branchId])
-  @@index([packageId])
-  @@index([therapistId])
   @@index([status])
+  @@index([mobile])
+  @@index([nationalId])
 }
 
 model Therapist {
   id Int @id @default(autoincrement())
 
+  code String @unique
+
   name String
 
   mobile String?
-  email  String?
+  email  String? @unique
 
   specialty String?
   notes     String?
@@ -62,17 +50,38 @@ model Therapist {
   branchId Int
   branch   Branch @relation(fields: [branchId], references: [id])
 
-  patients Patient[]
-
   appointments Appointment[]
 
-  status String @default("Active")
+  workingHours TherapistWorkingHour[]
+
+  status TherapistStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([code])
+  @@index([name])
   @@index([branchId])
   @@index([status])
+}
+
+model TherapistWorkingHour {
+  id Int @id @default(autoincrement())
+
+  therapistId Int
+  therapist   Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int
+
+  startTime String
+  endTime   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([therapistId, dayOfWeek])
+  @@index([therapistId])
+  @@index([dayOfWeek])
 }
 
 model Appointment {
@@ -80,22 +89,29 @@ model Appointment {
 
   code String @unique
 
-  patientId Int
-  patient Patient @relation(fields: [patientId], references: [id])
+  patientPackageId Int
+  patientPackage   PatientPackage @relation(fields: [patientPackageId], references: [id])
 
   therapistId Int
-  therapist Therapist @relation(fields: [therapistId], references: [id])
+  therapist   Therapist @relation(fields: [therapistId], references: [id])
 
   branchId Int
-  branch Branch @relation(fields: [branchId], references: [id])
+  branch   Branch @relation(fields: [branchId], references: [id])
 
   createdById Int?
-  createdBy User? @relation(fields: [createdById], references: [id])
+  createdBy   User? @relation("AppointmentCreator", fields: [createdById], references: [id])
+
+  checkedInAt DateTime?
+
+  checkedInById Int?
+  checkedInBy   User? @relation("AppointmentCheckIn", fields: [checkedInById], references: [id])
+
+  sessionNumber Int
 
   date DateTime
 
   startTime DateTime
-  endTime DateTime
+  endTime   DateTime
 
   duration Int @default(40)
 
@@ -105,14 +121,15 @@ model Appointment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-enum AppointmentStatus {
-  BOOKED
-  CHECKED_IN
-  EXCUSED
-  MISSED
-  CANCELLED_BY_MANAGER
+  @@unique([patientPackageId, sessionNumber])
+  @@index([patientPackageId])
+  @@index([therapistId])
+  @@index([branchId])
+  @@index([date])
+  @@index([status])
+  @@index([createdById])
+  @@index([checkedInById])
 }
 
 model Package {
@@ -125,9 +142,9 @@ model Package {
 
   allowedExcuses Int @default(0)
 
-  status String @default("Active")
+  status PackageStatus @default(ACTIVE)
 
-  patients Patient[]
+  patientPackages PatientPackage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -136,15 +153,19 @@ model Package {
 }
 
 model Branch {
-  id Int @id @default(autoincrement())
+  id      Int     @id @default(autoincrement())
+  code    String  @unique
+  name    String
+  address String?
+  phone   String?
+  email   String?
+  isMain  Boolean @default(false)
 
-  name String @unique
-
-  status String @default("Active")
-
-  patients Patient[]
+  status BranchStatus @default(ACTIVE)
 
   therapists Therapist[]
+
+  patientPackages PatientPackage[]
 
   appointments Appointment[]
 
@@ -154,16 +175,6 @@ model Branch {
   updatedAt DateTime @updatedAt
 
   @@index([status])
-}
-
-model Role {
-  id Int @id @default(autoincrement())
-
-  name String @unique
-
-  description String?
-
-  users User[]
 }
 
 model User {
@@ -173,25 +184,138 @@ model User {
 
   username String @unique
 
-  password String
+  passwordHash String
 
   phone String?
-  email String?
+  email String? @unique
 
-  status String @default("Active")
+  status UserStatus @default(ACTIVE)
 
-  roleId Int
-  role   Role @relation(fields: [roleId], references: [id])
+  role UserRole
 
-  branchId Int?
-  branch   Branch? @relation(fields: [branchId], references: [id])
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  createdPackages PatientPackage[] @relation("PackageCreator")
+
+  createdAppointments Appointment[] @relation("AppointmentCreator")
+
+  checkedInAppointments Appointment[] @relation("AppointmentCheckIn")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-   
-  appointments Appointment[]
-  
-  @@index([roleId])
+
   @@index([branchId])
   @@index([status])
+}
+
+model PatientPackage {
+  id Int @id @default(autoincrement())
+
+  code String @unique
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  packageId Int
+  package   Package @relation(fields: [packageId], references: [id])
+
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  createdById Int
+  createdBy   User @relation("PackageCreator", fields: [createdById], references: [id])
+
+  totalSessions Int
+
+  remainingSessions Int
+
+  allowedExcuses Int
+
+  usedExcuses Int @default(0)
+
+  originalPrice Decimal
+
+  discountType DiscountType @default(NONE)
+
+  discountValue Float @default(0)
+
+  finalPrice Decimal
+
+  status PatientPackageStatus @default(ACTIVE)
+
+  purchasedAt DateTime @default(now())
+
+  completedAt DateTime?
+
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([packageId])
+  @@index([branchId])
+  @@index([createdById])
+  @@index([status])
+}
+
+enum DiscountType {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum TherapistStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PackageStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PatientPackageStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CHECKED_IN
+  EXCUSED
+  MISSED
+  CANCELLED_BY_MANAGER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  BRANCH_MANAGER
+  RECEPTIONIST
+  THERAPIST
+  ACCOUNTANT
 }

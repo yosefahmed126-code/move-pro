@@ -1,15 +1,17 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+import { prisma } from "@/lib/prisma";
 
 export async function deleteTherapist(id: number) {
   const therapist = await prisma.therapist.findUnique({
-    where: { id },
+    where: {
+      id,
+    },
     include: {
       _count: {
         select: {
-          patients: true,
           appointments: true,
         },
       },
@@ -23,14 +25,11 @@ export async function deleteTherapist(id: number) {
     };
   }
 
-  if (
-    therapist._count.patients > 0 ||
-    therapist._count.appointments > 0
-  ) {
+  if (therapist._count.appointments > 0) {
     return {
       success: false,
       message:
-        "Cannot delete therapist because it is linked to patients or appointments.",
+        "Cannot delete therapist because it is linked to appointments.",
     };
   }
 

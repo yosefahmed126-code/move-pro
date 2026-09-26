@@ -1,130 +1,254 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import {
+  Gender,
+  UserRole,
+} from "@prisma/client";
+
 import { revalidatePath } from "next/cache";
-import { PatientSchema } from "@/lib/validators/patient";
 
-interface UpdatePatientData {
+import { prisma } from "@/lib/prisma";
+
+import {
+  requirePermission,
+} from "@/lib/auth/permissions";
+
+import {
+  UpdatePatientSchema,
+  UpdatePatientFormData,
+} from "@/lib/validators/patient";
+
+interface UpdatePatientData
+  extends UpdatePatientFormData {
   id: number;
-
-  name: string;
-  gender?: string;
-  birthDate?: string;
-
-  mobile: string;
-  mobile2?: string;
-
-  email?: string;
-  nationalId?: string;
-  address?: string;
-
-  branchId: number;
-  packageId: number | null;
-  therapistId: number | null;
 }
 
-export async function updatePatient(data: UpdatePatientData) {
-  const result = PatientSchema.safeParse(data);
+export async function updatePatient(
+  data: UpdatePatientData
+) {
+  try {
+    /*
+    |--------------------------------------------------------------------------
+    | Permission
+    |--------------------------------------------------------------------------
+    */
 
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten(),
-    };
-  }
+    const user =
+      await requirePermission(
+        "patients:update"
+      );
 
-  // Check duplicate mobile
-  const existingPatient = await prisma.patient.findFirst({
-    where: {
-      mobile: data.mobile,
-      NOT: {
-        id: data.id,
-      },
-    },
-  });
+    const isSuperAdmin =
+      user.role ===
+      UserRole.SUPER_ADMIN;
 
-  if (existingPatient) {
-    return {
-      success: false,
-      message: "Patient with this mobile number already exists.",
-    };
-  }
+    /*
+    |--------------------------------------------------------------------------
+    | Validate ID
+    |--------------------------------------------------------------------------
+    */
 
-  if (!data.packageId) {
-    return {
-      success: false,
-      message: "Please select a package.",
-    };
-  }
+    if (
+      !Number.isInteger(data.id) ||
+      data.id <= 0
+    ) {
+      return {
+        success: false,
+        message: "Invalid patient.",
+      };
+    }
 
-  const selectedPackage = await prisma.package.findUnique({
-    where: {
-      id: data.packageId,
-    },
-  });
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Form
+    |--------------------------------------------------------------------------
+    */
 
-  if (!selectedPackage) {
-    return {
-      success: false,
-      message: "Package not found.",
-    };
-  }
+    const result =
+      UpdatePatientSchema.safeParse({
+        name: data.name,
+        gender: data.gender,
+        birthDate: data.birthDate,
+        mobile: data.mobile,
+        mobile2: data.mobile2,
+        email: data.email,
+        nationalId: data.nationalId,
+        address: data.address,
+      });
 
-  await prisma.patient.update({
-    where: {
-      id: data.id,
-    },
+    if (!result.success) {
+      return {
+        success: false,
 
-    data: {
-      name: data.name,
+        message:
+          "Please check the entered patient information.",
 
-      gender: data.gender || null,
+        errors:
+          result.error.flatten(),
+      };
+    }
 
-      birthDate: data.birthDate
-        ? new Date(data.birthDate)
-        : null,
+    const validatedData =
+      result.data;
 
-      mobile: data.mobile,
+    /*
+    |--------------------------------------------------------------------------
+    | Patient + Branch Access
+    |--------------------------------------------------------------------------
+    |
+    | Do NOT trust the patient ID coming from the browser.
+    |
+    | Non-super-admin users must have access to at least
+    | one package belonging to their own branch.
+    |--------------------------------------------------------------------------
+    */
 
-      mobile2: data.mobile2 || null,
+    const patient =
+      await prisma.patient.findFirst({
+        where: {
+          id: data.id,
 
-      email: data.email || null,
-
-      nationalId: data.nationalId || null,
-
-      address: data.address || null,
-
-      branch: {
-        connect: {
-          id: data.branchId,
+          ...(!isSuperAdmin
+            ? {
+                patientPackages: {
+                  some: {
+                    branchId:
+                      user.branchId,
+                  },
+                },
+              }
+            : {}),
         },
-      },
 
-      package: {
-        connect: {
-          id: data.packageId,
+        select: {
+          id: true,
         },
-      },
+      });
 
-      therapist: data.therapistId
-        ? {
-            connect: {
-              id: data.therapistId,
-            },
-          }
-        : {
-            disconnect: true,
+    if (!patient) {
+      return {
+        success: false,
+        message: "Patient not found.",
+      };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Duplicate Mobile
+    |--------------------------------------------------------------------------
+    */
+
+    const existingPatient =
+      await prisma.patient.findFirst({
+        where: {
+          mobile:
+            validatedData.mobile,
+
+          NOT: {
+            id: data.id,
           },
+        },
 
-      remaining: selectedPackage.sessions,
-    },
-  });
+        select: {
+          id: true,
+        },
+      });
 
-  revalidatePath("/patients");
-  revalidatePath(`/patients/${data.id}`);
+    if (existingPatient) {
+      return {
+        success: false,
 
-  return {
-    success: true,
-    message: "Patient updated successfully.",
-  };
+        message:
+          "Patient with this mobile number already exists.",
+      };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Patient
+    |--------------------------------------------------------------------------
+    |
+    | Branch/package are intentionally NOT updated here.
+    |--------------------------------------------------------------------------
+    */
+
+    await prisma.patient.update({
+      where: {
+        id: patient.id,
+      },
+
+      data: {
+        name:
+          validatedData.name,
+
+        gender:
+          validatedData.gender ===
+          "Male"
+            ? Gender.MALE
+            : validatedData.gender ===
+                "Female"
+              ? Gender.FEMALE
+              : null,
+
+        birthDate:
+          validatedData.birthDate
+            ? new Date(
+                validatedData.birthDate
+              )
+            : null,
+
+        mobile:
+          validatedData.mobile,
+
+        mobile2:
+          validatedData.mobile2?.trim() ||
+          null,
+
+        email:
+          validatedData.email?.trim() ||
+          null,
+
+        nationalId:
+          validatedData.nationalId?.trim() ||
+          null,
+
+        address:
+          validatedData.address?.trim() ||
+          null,
+      },
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Revalidate
+    |--------------------------------------------------------------------------
+    */
+
+    revalidatePath("/patients");
+
+    revalidatePath(
+      `/patients/${patient.id}`
+    );
+
+    revalidatePath(
+      `/patients/${patient.id}/edit`
+    );
+
+    return {
+      success: true,
+      message:
+        "Patient updated successfully.",
+    };
+  } catch (error) {
+    console.error(
+      "UPDATE_PATIENT_ERROR:",
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        "Something went wrong while updating the patient.",
+    };
+  }
 }

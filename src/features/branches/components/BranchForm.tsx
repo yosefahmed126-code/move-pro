@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { BranchStatus } from "@prisma/client";
 
 import { createBranch } from "../actions/createBranch";
 import { updateBranch } from "../actions/updateBranch";
@@ -11,7 +12,7 @@ interface Props {
   branch?: {
     id: number;
     name: string;
-    status: string;
+    status: BranchStatus;
   };
 }
 
@@ -23,13 +24,18 @@ export default function BranchForm({
 
   const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState(branch?.name ?? "");
-
-  const [status, setStatus] = useState(
-    branch?.status ?? "Active"
+  const [name, setName] = useState(
+    branch?.name ?? ""
   );
 
-  async function handleSubmit(e: React.FormEvent) {
+  const [status, setStatus] =
+    useState<BranchStatus>(
+      branch?.status ?? BranchStatus.ACTIVE
+    );
+
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setLoading(true);
@@ -72,7 +78,9 @@ export default function BranchForm({
 
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
             className="w-full rounded-lg border p-3"
             placeholder="Enter branch name"
             required
@@ -86,18 +94,29 @@ export default function BranchForm({
 
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) =>
+              setStatus(
+                e.target.value as BranchStatus
+              )
+            }
             className="w-full rounded-lg border p-3"
           >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
+            <option value={BranchStatus.ACTIVE}>
+              Active
+            </option>
+
+            <option value={BranchStatus.INACTIVE}>
+              Inactive
+            </option>
           </select>
         </div>
 
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => router.push("/branches")}
+            onClick={() =>
+              router.push("/branches")
+            }
             className="rounded-lg border px-6 py-3"
           >
             Cancel
@@ -111,8 +130,8 @@ export default function BranchForm({
             {loading
               ? "Saving..."
               : mode === "create"
-              ? "Save Branch"
-              : "Update Branch"}
+                ? "Save Branch"
+                : "Update Branch"}
           </button>
         </div>
       </form>

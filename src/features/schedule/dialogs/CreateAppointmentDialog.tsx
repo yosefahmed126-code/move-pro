@@ -9,7 +9,10 @@ import {
 
 import { AppointmentForm } from "@/features/appointments/components/AppointmentForm";
 import { createAppointment } from "@/features/appointments/actions/createAppointment";
+
 import type { PatientOption } from "../types";
+
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -19,7 +22,10 @@ interface Props {
   therapistName: string;
 
   slot: string;
-  date: Date;
+
+  // YYYY-MM-DD
+  date: string;
+
   patients: PatientOption[];
 }
 
@@ -31,59 +37,156 @@ export function CreateAppointmentDialog({
   slot,
   date,
   patients,
-}: Props)
-{
+}: Props) {
   return (
-    
     <Dialog
       open={open}
       onOpenChange={(value) => {
-        if (!value) onClose();
+        if (!value) {
+          onClose();
+        }
       }}
     >
-      
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>New Appointment</DialogTitle>
+          <DialogTitle>
+            New Appointment
+          </DialogTitle>
         </DialogHeader>
 
         <AppointmentForm
-  therapistName={therapistName}
-  slot={slot}
-  date={date}
-  patients={patients}
- onSubmit={async (values) => {
-  const patient = patients.find(
-    (p) => p.id === Number(values.patientId)
-  );
+          therapistName={therapistName}
+          slot={slot}
+          date={date}
+          patients={patients}
+          onSubmit={async (values) => {
+            /*
+            |--------------------------------------------------------------------------
+            | Selected Patient
+            |--------------------------------------------------------------------------
+            */
 
-  if (!patient) {
-    alert("Please select a patient.");
-    return;
-  }
+            const patient = patients.find(
+              (patient) =>
+                patient.id ===
+                Number(values.patientId)
+            );
 
- const [hours, minutes] = slot.split(":").map(Number);
+            if (!patient) {
+              toast.error(
+                "Please select a patient."
+              );
 
-const startTime = new Date(date);
-startTime.setHours(hours, minutes, 0, 0);
+              return;
+            }
 
-const endTime = new Date(startTime);
-endTime.setMinutes(endTime.getMinutes() + 40);
+            /*
+            |--------------------------------------------------------------------------
+            | Selected Date
+            |--------------------------------------------------------------------------
+            */
 
-await createAppointment({
-  patientId: patient.id,
-  therapistId,
-  branchId: patient.branchId,
-  date,
-  startTime,
-  endTime,
-  notes: values.notes,
-});
+            const selectedDate = new Date(
+              `${date}T12:00:00`
+            );
 
-onClose();
-}}
-/>
-           
+            if (
+              Number.isNaN(
+                selectedDate.getTime()
+              )
+            ) {
+              toast.error(
+                "Invalid appointment date."
+              );
+
+              return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Start / End Time
+            |--------------------------------------------------------------------------
+            */
+
+            const [hours, minutes] = slot
+              .split(":")
+              .map(Number);
+
+            const startTime = new Date(
+              selectedDate
+            );
+
+            startTime.setHours(
+              hours,
+              minutes,
+              0,
+              0
+            );
+
+            const endTime = new Date(
+              startTime
+            );
+
+            endTime.setMinutes(
+              endTime.getMinutes() + 40
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Appointment Date
+            |--------------------------------------------------------------------------
+            */
+
+            const appointmentDate =
+              new Date(selectedDate);
+
+            appointmentDate.setHours(
+              0,
+              0,
+              0,
+              0
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create Appointment
+            |--------------------------------------------------------------------------
+            */
+
+            try {
+              const result =
+                await createAppointment({
+                  patientPackageId:
+                    patient.patientPackageId,
+
+                  therapistId,
+
+                  branchId:
+                    patient.branchId,
+
+                  date: appointmentDate,
+
+                  startTime,
+
+                  endTime,
+
+                  notes: values.notes,
+                });
+
+              toast.success(
+                result.message
+              );
+
+              onClose();
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to create appointment."
+              );
+            }
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

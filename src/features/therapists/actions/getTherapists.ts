@@ -7,11 +7,10 @@ export async function getTherapists() {
     include: {
       branch: true,
       _count: {
-        select: {
-          patients: true,
-          appointments: true,
-        },
-      },
+  select: {
+    appointments: true,
+  },
+},
     },
     orderBy: {
       name: "asc",
@@ -20,7 +19,6 @@ export async function getTherapists() {
 
   return therapists.map((therapist) => ({
     ...therapist,
-    patientsCount: therapist._count.patients,
-    appointmentsCount: therapist._count.appointments,
-  }));
+   patientsCount: 0,
+   appointmentsCount: therapist._count.appointments,  }));
 }

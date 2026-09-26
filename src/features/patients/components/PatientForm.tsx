@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-import { PatientSchema, PatientFormData } from "@/lib/validators/patient";
+import {
+  CreatePatientSchema,
+  CreatePatientFormData,
+} from "@/lib/validators/patient";
 
 import { createPatient } from "../actions/createPatient";
 import { updatePatient } from "../actions/updatePatient";
@@ -30,35 +32,31 @@ interface Props {
     sessions: number;
   }[];
 
-  therapists: {
-    id: number;
-    name: string;
-    branchId: number;
-  }[];
-
   patient?: {
     id: number;
+
     name: string;
     gender: string | null;
     birthDate: string;
+
     mobile: string;
     mobile2: string | null;
+
     email: string | null;
     nationalId: string | null;
     address: string | null;
-    therapistId: number | null;
+
     branchId: number;
     packageId: number | null;
   };
 }
+
 export default function PatientForm({
   mode,
   patient,
   branches,
   packages,
-  therapists,
 }: Props) {
-
   const router = useRouter();
 
   const {
@@ -66,207 +64,306 @@ export default function PatientForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<PatientFormData>({
-    resolver: zodResolver(PatientSchema),
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<CreatePatientFormData>({
+    resolver: zodResolver(CreatePatientSchema),
 
     defaultValues: {
       name: patient?.name ?? "",
-      gender: patient?.gender ?? "",
-      birthDate: patient?.birthDate ?? "",
-      mobile: patient?.mobile ?? "",
-      mobile2: patient?.mobile2 ?? "",
-      email: patient?.email ?? "",
-      nationalId: patient?.nationalId ?? "",
-      address: patient?.address ?? "",
-      therapistId: patient?.therapistId ?? null,
-      branchId: patient?.branchId ?? 0,
-      packageId: patient?.packageId ?? null,
+
+      gender:
+        patient?.gender === "Male" ||
+        patient?.gender === "Female"
+          ? patient.gender
+          : "",
+
+      birthDate:
+        patient?.birthDate ?? "",
+
+      mobile:
+        patient?.mobile ?? "",
+
+      mobile2:
+        patient?.mobile2 ?? "",
+
+      email:
+        patient?.email ?? "",
+
+      nationalId:
+        patient?.nationalId ?? "",
+
+      address:
+        patient?.address ?? "",
+
+      branchId:
+        patient?.branchId ?? 0,
+
+      packageId:
+  patient?.packageId ?? 0,
     },
   });
 
-  const selectedBranch = watch("branchId");
+  const onSubmit = async (
+    data: CreatePatientFormData
+  ) => {
+    try {
+      if (mode === "create") {
+        const result =
+          await createPatient(data);
 
-const filteredTherapists = useMemo(() => {
-  return (therapists ?? []).filter(
-  (t) => t.branchId === selectedBranch
-);
-}, [selectedBranch, therapists]);
+        if (!result.success) {
+          toast.error(
+            result.message ??
+              "Something went wrong."
+          );
 
-const onSubmit = async (data: PatientFormData) => {
+          return;
+        }
 
-  const result =
-  mode === "create"
-    ? await createPatient({
-        ...data,
-        packageId: data.packageId,
-        therapistId: data.therapistId,
-      })
-    : await updatePatient({
-        id: patient!.id,
-        ...data,
-        packageId: data.packageId,
-        therapistId: data.therapistId,
+        toast.success(result.message);
+
+        router.push(
+          `/patients/${result.patientId}`
+        );
+
+        router.refresh();
+
+        return;
+      }
+
+      if (!patient) {
+        toast.error("Patient not found.");
+        return;
+      }
+
+      const result = await updatePatient({
+        id: patient.id,
+
+        name: data.name,
+        gender: data.gender,
+        birthDate: data.birthDate,
+
+        mobile: data.mobile,
+        mobile2: data.mobile2,
+
+        email: data.email,
+        nationalId: data.nationalId,
+        address: data.address,
       });
-  if (!result.success) {
-    toast.error(result.message);
-    return;
-  }
 
-  toast.success(result.message);
+      if (!result.success) {
+        toast.error(
+          result.message ??
+            "Something went wrong."
+        );
 
-  router.push("/patients");
-  router.refresh();
-};
- 
-return (
-  <form
-    onSubmit={handleSubmit(onSubmit)}
-    className="space-y-6"
-  >
-    <FormSection title="Patient Information">
+        return;
+      }
 
-      <TextInput
-        label="Full Name"
-        required
-        registration={register("name")}
-        error={errors.name}
-      />
+      toast.success(result.message);
 
-      <SelectInput
-        label="Gender"
-        value={watch("gender") ?? ""}
-        options={[
-          { value: "Male", label: "Male" },
-          { value: "Female", label: "Female" },
-        ]}
-        onChange={(value) =>
-          setValue("gender", value)
-        }
-        error={errors.gender}
-      />
+      router.push(
+        `/patients/${patient.id}`
+      );
 
-      <TextInput
-        label="Birth Date"
-        type="date"
-        registration={register("birthDate")}
-        error={errors.birthDate}
-      />
+      router.refresh();
+    } catch (error) {
+      console.error(
+        "PATIENT_FORM_ERROR:",
+        error
+      );
 
-      <TextInput
-        label="National ID"
-        registration={register("nationalId")}
-        error={errors.nationalId}
-      />
+      toast.error(
+        "Something went wrong while saving the patient."
+      );
+    }
+  };
 
-    </FormSection>
+  return (
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6"
+    >
+      {/* Patient Information */}
 
-    <FormSection title="Contact Information">
-
-      <TextInput
-        label="Mobile"
-        required
-        registration={register("mobile")}
-        error={errors.mobile}
-      />
-
-      <TextInput
-        label="Mobile 2"
-        registration={register("mobile2")}
-        error={errors.mobile2}
-      />
-
-      <TextInput
-        label="Email"
-        type="email"
-        registration={register("email")}
-        error={errors.email}
-      />
-
-      <div className="md:col-span-2">
-        <TextArea
-          label="Address"
-          registration={register("address")}
-          error={errors.address}
+      <FormSection title="Patient Information">
+        <TextInput
+          label="Full Name"
+          required
+          registration={register("name")}
+          error={errors.name}
         />
-      </div>
 
-    </FormSection>
+        <SelectInput
+          label="Gender"
+          value={watch("gender") ?? ""}
+          options={[
+            {
+              value: "Male",
+              label: "Male",
+            },
+            {
+              value: "Female",
+              label: "Female",
+            },
+          ]}
+          onChange={(value) =>
+            setValue(
+              "gender",
+              value as "Male" | "Female" | "",
+              {
+                shouldValidate: true,
+              }
+            )
+          }
+          error={errors.gender}
+        />
 
+        <TextInput
+          label="Birth Date"
+          type="date"
+          registration={register(
+            "birthDate"
+          )}
+          error={errors.birthDate}
+        />
+
+        <TextInput
+          label="National ID"
+          registration={register(
+            "nationalId"
+          )}
+          error={errors.nationalId}
+        />
+      </FormSection>
+
+      {/* Contact Information */}
+
+      <FormSection title="Contact Information">
+        <TextInput
+          label="Mobile"
+          required
+          registration={register("mobile")}
+          error={errors.mobile}
+        />
+
+        <TextInput
+          label="Mobile 2"
+          registration={register("mobile2")}
+          error={errors.mobile2}
+        />
+
+        <TextInput
+          label="Email"
+          type="email"
+          registration={register("email")}
+          error={errors.email}
+        />
+
+        <div className="md:col-span-2">
+          <TextArea
+            label="Address"
+            registration={register(
+              "address"
+            )}
+            error={errors.address}
+          />
+        </div>
+      </FormSection>
+
+      {/* Clinic Information */}
+
+      {mode === "create" && (
         <FormSection title="Clinic Information">
+          <SelectInput
+            label="Branch"
+            value={watch("branchId")}
+            options={branches.map(
+              (branch) => ({
+                value: branch.id,
+                label: branch.name,
+              })
+            )}
+            onChange={(value) =>
+              setValue(
+                "branchId",
+                Number(value),
+                {
+                  shouldValidate: true,
+                }
+              )
+            }
+            error={errors.branchId}
+          />
 
-      <SelectInput
-        label="Branch"
-        value={watch("branchId")}
-        options={branches.map((branch) => ({
-          value: branch.id,
-          label: branch.name,
-        }))}
-        onChange={(value) => {
-          setValue("branchId", Number(value));
-          setValue("therapistId", null);
-        }}
-        error={errors.branchId}
-      />
+          <SelectInput
+            label="Package"
+            value={
+              watch("packageId") ?? ""
+            }
+            options={packages.map(
+              (pkg) => ({
+                value: pkg.id,
 
-      <SelectInput
-        label="Therapist"
-        value={watch("therapistId") ?? ""}
-        options={filteredTherapists.map((therapist) => ({
-          value: therapist.id,
-          label: therapist.name,
-        }))}
-        onChange={(value) =>
-          setValue(
-            "therapistId",
-            value ? Number(value) : null
-          )
-        }
-        error={errors.therapistId}
-      />
+                label: `${pkg.name} (${pkg.sessions} Sessions)`,
+              })
+            )}
+           onChange={(value) =>
+  setValue(
+    "packageId",
+    value
+      ? Number(value)
+      : 0,
+    {
+      shouldValidate: true,
+    }
+  )
+}
+            error={errors.packageId}
+          />
+        </FormSection>
+      )}
 
-      <SelectInput
-        label="Package"
-        value={watch("packageId") ?? ""}
-        options={packages.map((pkg) => ({
-          value: pkg.id,
-          label: `${pkg.name} (${pkg.sessions} Sessions)`,
-        }))}
-        onChange={(value) =>
-          setValue(
-            "packageId",
-            value ? Number(value) : null
-          )
-        }
-        error={errors.packageId}
-      />
+      {/* Actions */}
 
-    </FormSection>
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => {
+            if (
+              mode === "edit" &&
+              patient
+            ) {
+              router.push(
+                `/patients/${patient.id}`
+              );
 
-        <div className="flex justify-end gap-3">
+              return;
+            }
 
-      <button
-        type="button"
-        onClick={() => router.push("/patients")}
-        className="rounded-lg border px-6 py-3"
-      >
-        Cancel
-      </button>
+            router.push("/patients");
+          }}
+          className="rounded-lg border px-6 py-3 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="rounded-lg bg-cyan-600 px-6 py-3 text-white transition hover:bg-cyan-700 disabled:opacity-50"
-      >
-        {isSubmitting
-          ? "Saving..."
-          : mode === "create"
-          ? "Create Patient"
-          : "Update Patient"}
-      </button>
-
-    </div>
-
-  </form>
-);
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="rounded-lg bg-cyan-600 px-6 py-3 text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting
+            ? "Saving..."
+            : mode === "create"
+              ? "Create Patient"
+              : "Update Patient"}
+        </button>
+      </div>
+    </form>
+  );
 }

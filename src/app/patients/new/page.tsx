@@ -1,20 +1,26 @@
+import { BranchStatus, PackageStatus } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PatientForm from "@/features/patients/components/PatientForm";
-import { prisma } from "@/lib/prisma";
 
 export default async function NewPatientPage() {
   const branches = await prisma.branch.findMany({
     where: {
-      status: "Active",
+      status: BranchStatus.ACTIVE,
     },
     orderBy: {
       name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
     },
   });
 
   const packages = await prisma.package.findMany({
     where: {
-      status: "Active",
+      status: PackageStatus.ACTIVE,
     },
     orderBy: {
       sessions: "asc",
@@ -23,15 +29,6 @@ export default async function NewPatientPage() {
       id: true,
       name: true,
       sessions: true,
-    },
-  });
-
-  const therapists = await prisma.therapist.findMany({
-    where: {
-      status: "Active",
-    },
-    orderBy: {
-      name: "asc",
     },
   });
 
@@ -52,7 +49,6 @@ export default async function NewPatientPage() {
           mode="create"
           branches={branches}
           packages={packages}
-          therapists={therapists}
         />
       </div>
     </DashboardLayout>

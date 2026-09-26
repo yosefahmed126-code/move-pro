@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PackageStatus } from "@prisma/client";
 
 import { createPackage } from "../actions/createPackage";
 import { updatePackage } from "../actions/updatePackage";
@@ -13,7 +14,7 @@ interface PackageFormProps {
     sessions: number;
     price: number;
     allowedExcuses: number;
-    status: string;
+    status: PackageStatus;
   };
 }
 
@@ -22,19 +23,27 @@ export default function PackageForm({
 }: PackageFormProps) {
   const router = useRouter();
 
-  const [name, setName] = useState(packageData?.name ?? "");
+  const [name, setName] = useState(
+    packageData?.name ?? ""
+  );
+
   const [sessions, setSessions] = useState(
     packageData?.sessions ?? 1
   );
+
   const [price, setPrice] = useState(
     packageData?.price ?? 0
   );
-  const [allowedExcuses, setAllowedExcuses] = useState(
-    packageData?.allowedExcuses ?? 0
-  );
-  const [status, setStatus] = useState(
-    packageData?.status ?? "Active"
-  );
+
+  const [allowedExcuses, setAllowedExcuses] =
+    useState(
+      packageData?.allowedExcuses ?? 0
+    );
+
+  const [status, setStatus] =
+    useState<PackageStatus>(
+      packageData?.status ?? PackageStatus.ACTIVE
+    );
 
   const [loading, setLoading] = useState(false);
 
@@ -81,7 +90,9 @@ export default function PackageForm({
 
         <input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) =>
+            setName(e.target.value)
+          }
           className="w-full rounded-lg border p-3"
           required
         />
@@ -98,7 +109,9 @@ export default function PackageForm({
             min={1}
             value={sessions}
             onChange={(e) =>
-              setSessions(Number(e.target.value))
+              setSessions(
+                Number(e.target.value)
+              )
             }
             className="w-full rounded-lg border p-3"
             required
@@ -116,7 +129,9 @@ export default function PackageForm({
             step="0.01"
             value={price}
             onChange={(e) =>
-              setPrice(Number(e.target.value))
+              setPrice(
+                Number(e.target.value)
+              )
             }
             className="w-full rounded-lg border p-3"
             required
@@ -135,7 +150,9 @@ export default function PackageForm({
             min={0}
             value={allowedExcuses}
             onChange={(e) =>
-              setAllowedExcuses(Number(e.target.value))
+              setAllowedExcuses(
+                Number(e.target.value)
+              )
             }
             className="w-full rounded-lg border p-3"
             required
@@ -150,12 +167,19 @@ export default function PackageForm({
           <select
             value={status}
             onChange={(e) =>
-              setStatus(e.target.value)
+              setStatus(
+                e.target.value as PackageStatus
+              )
             }
             className="w-full rounded-lg border p-3"
           >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
+            <option value={PackageStatus.ACTIVE}>
+              Active
+            </option>
+
+            <option value={PackageStatus.INACTIVE}>
+              Inactive
+            </option>
           </select>
         </div>
       </div>
@@ -168,8 +192,8 @@ export default function PackageForm({
         {loading
           ? "Saving..."
           : packageData
-          ? "Update Package"
-          : "Create Package"}
+            ? "Update Package"
+            : "Create Package"}
       </button>
     </form>
   );

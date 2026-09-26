@@ -1,122 +1,200 @@
 "use server";
 
+import { Gender } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { generatePatientPackageCode } from "@/lib/utils/generatePatientPackageCode";
 import { prisma } from "@/lib/prisma";
-import { PatientSchema } from "@/lib/validators/patient";
+import {
+  CreatePatientSchema,
+  CreatePatientFormData,
+} from "@/lib/validators/patient";
 import { generateCode } from "@/lib/utils/generateCode";
+import {
+  requirePermission,
+} from "@/lib/auth/permissions";
 
-interface CreatePatientData {
-  name: string;
-  gender?: string;
-  birthDate?: string;
+import {
+  requireBranchAccess,
+} from "@/lib/auth/requireBranchAccess";
 
-  mobile: string;
-  mobile2?: string;
+export async function createPatient(
+  data: CreatePatientFormData
+) {
+  try {
+    const user =
+  await requirePermission(
+    "patients:create"
+  );
+    const result = CreatePatientSchema.safeParse(data);
 
-  email?: string;
-  nationalId?: string;
-  address?: string;
+    if (!result.success) {
+      return {
+        success: false,
+        message:
+          "Please check the entered patient information.",
+        errors: result.error.flatten(),
+      };
+    }
 
-  branchId: number;
-  packageId: number | null;
-  therapistId: number | null;
-}
-
-export async function createPatient(data: CreatePatientData) {
-  const result = PatientSchema.safeParse(data);
-
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten(),
-    };
-  }
-
-  // Check duplicate mobile
-  const existingPatient = await prisma.patient.findFirst({
-    where: {
-      mobile: data.mobile,
-    },
-  });
-
-  if (existingPatient) {
-    return {
-      success: false,
-      message: "Patient with this mobile number already exists.",
-    };
-  }
-
-  if (!data.packageId) {
-    return {
-      success: false,
-      message: "Please select a package.",
-    };
-  }
-
-  const selectedPackage = await prisma.package.findUnique({
-    where: {
-      id: data.packageId,
-    },
-  });
-
-  if (!selectedPackage) {
-    return {
-      success: false,
-      message: "Package not found.",
-    };
-  }
-
-  
-  const code = await generateCode(
-  "patient",
-  "MP"
+    const validatedData = result.data;
+await requireBranchAccess(
+  validatedData.branchId
 );
 
-  await prisma.patient.create({
-    data: {
-      code,
-
-      name: data.name,
-      gender: data.gender || null,
-
-      birthDate: data.birthDate
-        ? new Date(data.birthDate)
-        : null,
-
-      mobile: data.mobile,
-      mobile2: data.mobile2 || null,
-
-      email: data.email || null,
-      nationalId: data.nationalId || null,
-      address: data.address || null,
-
-      branch: {
-        connect: {
-          id: data.branchId,
+    const existingPatient =
+      await prisma.patient.findFirst({
+        where: {
+          mobile: validatedData.mobile,
         },
-      },
+      });
 
-      package: {
-        connect: {
-          id: data.packageId,
+    if (existingPatient) {
+      return {
+        success: false,
+        message:
+          "Patient with this mobile number already exists.",
+      };
+    }
+
+    if (!validatedData.packageId) {
+      return {
+        success: false,
+        message: "Please select a package.",
+      };
+    }
+
+    const branch = await prisma.branch.findUnique({
+      where: {
+        id: validatedData.branchId,
+      },
+    });
+
+    if (!branch) {
+      return {
+        success: false,
+        message: "Branch not found.",
+      };
+    }
+
+    const selectedPackage =
+      await prisma.package.findUnique({
+        where: {
+          id: validatedData.packageId,
         },
-      },
+      });
 
-      therapist: data.therapistId
-        ? {
-            connect: {
-              id: data.therapistId,
-            },
-          }
-        : undefined,
+    if (!selectedPackage) {
+      return {
+        success: false,
+        message: "Package not found.",
+      };
+    }
 
-      remaining: selectedPackage.sessions,
+    const patientCode = await generateCode(
+      "patient",
+      "MP"
+    );
 
-      status: "Active",
-    },
-  });
+    const patient = await prisma.$transaction(
+      async (tx) => {
+        const newPatient = await tx.patient.create({
+          data: {
+            code: patientCode,
 
-  return {
-    success: true,
-    message: "Patient created successfully.",
-  };
+            name: validatedData.name,
+
+            gender:
+              validatedData.gender === "Male"
+                ? Gender.MALE
+                : validatedData.gender === "Female"
+                  ? Gender.FEMALE
+                  : null,
+
+            birthDate: validatedData.birthDate
+              ? new Date(validatedData.birthDate)
+              : null,
+
+            mobile: validatedData.mobile,
+
+            mobile2:
+              validatedData.mobile2?.trim() ||
+              null,
+
+            email:
+              validatedData.email?.trim() || null,
+
+            nationalId:
+              validatedData.nationalId?.trim() ||
+              null,
+
+            address:
+              validatedData.address?.trim() ||
+              null,
+          },
+        });
+
+        /*
+          Temporary package code generator.
+
+          Later, when we build Package Management,
+          this will be replaced with a generator that
+          supports multiple packages per patient.
+        */
+        const packageCode =
+          await generatePatientPackageCode();
+
+        await tx.patientPackage.create({
+          data: {
+            code: packageCode,
+
+            patientId: newPatient.id,
+
+            packageId: selectedPackage.id,
+
+            branchId: branch.id,
+
+            createdById: user.id,
+
+            totalSessions:
+              selectedPackage.sessions,
+
+            remainingSessions:
+              selectedPackage.sessions,
+
+            allowedExcuses:
+              selectedPackage.allowedExcuses,
+
+            usedExcuses: 0,
+
+            originalPrice:
+              selectedPackage.price,
+
+            finalPrice:
+              selectedPackage.price,
+          },
+        });
+
+        return newPatient;
+      }
+    );
+
+    revalidatePath("/patients");
+
+    return {
+      success: true,
+      message: "Patient created successfully.",
+      patientId: patient.id,
+    };
+  } catch (error) {
+    console.error(
+      "CREATE_PATIENT_ERROR:",
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        "Something went wrong while creating the patient.",
+    };
+  }
 }
