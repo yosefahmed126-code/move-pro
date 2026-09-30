@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  AppointmentStatus,
   PatientPackageStatus,
   PatientStatus,
   TherapistStatus,
@@ -140,16 +141,31 @@ export async function getSchedule(
   */
 
   const appointments =
-    await prisma.appointment.findMany({
-      where: {
-        branchId:
-          effectiveBranchId,
+  await prisma.appointment.findMany({
+    where: {
+      branchId:
+        effectiveBranchId,
 
-        date: {
-          gte: start,
-          lte: end,
-        },
+      date: {
+        gte: start,
+        lte: end,
       },
+
+      /*
+      |--------------------------------------------------------------------------
+      | Hide Cancelled Appointments From Schedule
+      |--------------------------------------------------------------------------
+      |
+      | CANCELLED_BY_MANAGER appointments remain stored in the database
+      | and patient history, but they no longer occupy a schedule slot.
+      |
+      */
+
+      status: {
+        not:
+          AppointmentStatus.CANCELLED_BY_MANAGER,
+      },
+    },
 
       include: {
         patientPackage: {

@@ -239,6 +239,51 @@ export async function updateAppointmentStatus(
                   : {}),
               },
             });
+            /*
+|--------------------------------------------------------------------------
+| Activate Upcoming Package
+|--------------------------------------------------------------------------
+|
+| When the current package reaches zero sessions,
+| activate the patient's UPCOMING package automatically.
+|
+*/
+
+if (remainingSessions === 0) {
+  const upcomingPackage =
+    await tx.patientPackage.findFirst({
+      where: {
+        patientId:
+          patientPackage.patientId,
+
+        status:
+          PatientPackageStatus.UPCOMING,
+      },
+
+      orderBy: {
+        purchasedAt: "asc",
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+  if (upcomingPackage) {
+    await tx.patientPackage.update({
+      where: {
+        id: upcomingPackage.id,
+      },
+
+      data: {
+        status:
+          PatientPackageStatus.ACTIVE,
+
+        completedAt: null,
+      },
+    });
+  }
+}
           }
 
           /*
@@ -292,6 +337,41 @@ export async function updateAppointmentStatus(
                   : {}),
               },
             });
+            if (remainingSessions === 0) {
+  const upcomingPackage =
+    await tx.patientPackage.findFirst({
+      where: {
+        patientId:
+          patientPackage.patientId,
+
+        status:
+          PatientPackageStatus.UPCOMING,
+      },
+
+      orderBy: {
+        purchasedAt: "asc",
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+  if (upcomingPackage) {
+    await tx.patientPackage.update({
+      where: {
+        id: upcomingPackage.id,
+      },
+
+      data: {
+        status:
+          PatientPackageStatus.ACTIVE,
+
+        completedAt: null,
+      },
+    });
+  }
+}
           }
 
           /*
@@ -334,6 +414,7 @@ export async function updateAppointmentStatus(
               },
             });
           }
+          
 
           /*
           |--------------------------------------------------------------------------

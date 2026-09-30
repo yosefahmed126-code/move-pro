@@ -183,36 +183,85 @@ export async function createPatientPackage(
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | Prevent Multiple Active Packages
-    |--------------------------------------------------------------------------
-    |
-    | A patient can only have one ACTIVE package.
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Current Active / Upcoming Package
+|--------------------------------------------------------------------------
+*/
 
-    const activePackage =
-      await prisma.patientPackage.findFirst({
-        where: {
-          patientId: patient.id,
+const [activePackage, upcomingPackage] =
+  await Promise.all([
+    prisma.patientPackage.findFirst({
+      where: {
+        patientId: patient.id,
+        status:
+          PatientPackageStatus.ACTIVE,
+      },
 
-          status:
-            PatientPackageStatus.ACTIVE,
-        },
+      orderBy: {
+        purchasedAt: "desc",
+      },
 
-        select: {
-          id: true,
-        },
-      });
+      select: {
+        id: true,
+        code: true,
+        remainingSessions: true,
+        branchId: true,
+      },
+    }),
 
-    if (activePackage) {
-      return {
-        success: false,
+    prisma.patientPackage.findFirst({
+      where: {
+        patientId: patient.id,
+        status:
+          PatientPackageStatus.UPCOMING,
+      },
 
-        message:
-          "Patient already has an active package.",
-      };
-    }
+      orderBy: {
+        purchasedAt: "desc",
+      },
+
+      select: {
+        id: true,
+        code: true,
+      },
+    }),
+  ]);
+
+/*
+|--------------------------------------------------------------------------
+| Prevent Multiple Upcoming Packages
+|--------------------------------------------------------------------------
+*/
+
+if (upcomingPackage) {
+  return {
+    success: false,
+    message:
+      "Patient already has an upcoming package.",
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| Renewal Eligibility
+|--------------------------------------------------------------------------
+|
+| If an ACTIVE package exists:
+| renewal is allowed only when 3 sessions
+| or fewer remain.
+|
+*/
+
+if (
+  activePackage &&
+  activePackage.remainingSessions > 3
+) {
+  return {
+    success: false,
+    message:
+      "Package renewal is available when the current package has 3 or fewer remaining sessions.",
+  };
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -332,7 +381,23 @@ export async function createPatientPackage(
 
     const packageCode =
       await generatePatientPackageCode();
+/*
+|--------------------------------------------------------------------------
+| New Package Status
+|--------------------------------------------------------------------------
+|
+| No active package:
+| → ACTIVE
+|
+| Existing active package with <= 3 sessions:
+| → UPCOMING
+|
+*/
 
+const newPackageStatus =
+  activePackage
+    ? PatientPackageStatus.UPCOMING
+    : PatientPackageStatus.ACTIVE;
     /*
     |--------------------------------------------------------------------------
     | Create Patient Package
@@ -385,7 +450,7 @@ export async function createPatientPackage(
             finalPrice,
 
           status:
-            PatientPackageStatus.ACTIVE,
+  newPackageStatus,
         },
       });
 
@@ -411,8 +476,11 @@ export async function createPatientPackage(
       success: true,
 
       message:
-        "Package added successfully.",
-
+  newPackageStatus ===
+  PatientPackageStatus.UPCOMING
+    ? "Upcoming package created successfully."
+    : "Package added successfully.",
+    
       patientPackageId:
         patientPackage.id,
     };

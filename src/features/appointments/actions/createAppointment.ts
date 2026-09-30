@@ -180,6 +180,100 @@ export async function createAppointment(
     );
   }
 
+/*
+|--------------------------------------------------------------------------
+| Therapist Working Hours
+|--------------------------------------------------------------------------
+|
+| Appointment must be completely inside the therapist's
+| working hours for the selected day.
+|
+*/
+
+const appointmentDayOfWeek =
+  appointmentData.date.getDay();
+
+const workingHour =
+  await prisma.therapistWorkingHour.findUnique({
+    where: {
+      therapistId_dayOfWeek: {
+        therapistId:
+          appointmentData.therapistId,
+
+        dayOfWeek:
+          appointmentDayOfWeek,
+      },
+    },
+
+    select: {
+      startTime: true,
+      endTime: true,
+    },
+  });
+
+/*
+|--------------------------------------------------------------------------
+| Therapist Not Working This Day
+|--------------------------------------------------------------------------
+*/
+
+if (!workingHour) {
+  throw new Error(
+    "This therapist is not working on the selected day."
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Convert Times To Minutes
+|--------------------------------------------------------------------------
+|
+| Working hours are stored as strings:
+|
+| 15:00
+| 23:00
+|
+| Appointment times are Date objects.
+|
+*/
+
+const workingStartMinutes =
+  timeStringToMinutes(
+    workingHour.startTime
+  );
+
+const workingEndMinutes =
+  timeStringToMinutes(
+    workingHour.endTime
+  );
+
+const appointmentStartMinutes =
+  appointmentData.startTime.getHours() *
+    60 +
+  appointmentData.startTime.getMinutes();
+
+const appointmentEndMinutes =
+  appointmentData.endTime.getHours() *
+    60 +
+  appointmentData.endTime.getMinutes();
+
+/*
+|--------------------------------------------------------------------------
+| Validate Working Hours
+|--------------------------------------------------------------------------
+*/
+
+if (
+  appointmentStartMinutes <
+    workingStartMinutes ||
+  appointmentEndMinutes >
+    workingEndMinutes
+) {
+  throw new Error(
+    "Appointment must be within the therapist's working hours."
+  );
+}
+
   /*
   |--------------------------------------------------------------------------
   | Check Therapist Time Conflict
@@ -403,4 +497,25 @@ const sessionNumber =
     message:
       "Appointment created successfully.",
   };
+}
+/*
+|--------------------------------------------------------------------------
+| Time String To Minutes
+|--------------------------------------------------------------------------
+|
+| Example:
+|
+| 15:00 -> 900
+| 16:20 -> 980
+| 23:00 -> 1380
+|
+*/
+
+function timeStringToMinutes(
+  time: string
+) {
+  const [hours, minutes] =
+    time.split(":").map(Number);
+
+  return hours * 60 + minutes;
 }

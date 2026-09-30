@@ -22,6 +22,10 @@ interface RenewPackageFormProps {
   }[];
 
   hasActivePackage: boolean;
+
+  remainingSessions: number | null;
+
+  hasUpcomingPackage: boolean;
 }
 
 export default function RenewPackageForm({
@@ -29,6 +33,8 @@ export default function RenewPackageForm({
   packages,
   branches,
   hasActivePackage,
+  remainingSessions,
+  hasUpcomingPackage,
 }: RenewPackageFormProps) {
   const router = useRouter();
 

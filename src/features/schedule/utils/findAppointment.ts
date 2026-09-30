@@ -5,25 +5,28 @@ export function findAppointment(
   therapistId: number,
   slot: string
 ) {
-  return appointments.find((appointment) => {
-   const appointmentTime = new Date(
-  appointment.startTime
-).toLocaleTimeString("en-GB", {
-  timeZone: "Africa/Cairo",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
-    console.log({
-      slot,
-      appointmentTime,
-      therapistId,
-      appointmentTherapist: appointment.therapistId,
-    });
+  return appointments.find(
+    (appointment) => {
+      const appointmentTime =
+        new Date(
+          appointment.startTime
+        ).toLocaleTimeString(
+          "en-GB",
+          {
+            timeZone:
+              "Africa/Cairo",
 
-    return (
-      appointment.therapistId === therapistId &&
-      appointmentTime === slot
-    );
-  });
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }
+        );
+
+      return (
+        appointment.therapistId ===
+          therapistId &&
+        appointmentTime === slot
+      );
+    }
+  );
 }

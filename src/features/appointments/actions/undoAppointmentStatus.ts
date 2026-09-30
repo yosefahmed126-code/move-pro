@@ -243,6 +243,62 @@ export async function undoAppointmentStatus(
           | Restore Appointment To BOOKED
           |--------------------------------------------------------------------------
           */
+          /*
+|--------------------------------------------------------------------------
+| Restore Conflict Check
+|--------------------------------------------------------------------------
+|
+| A CANCELLED_BY_MANAGER appointment may have released its slot,
+| allowing another patient to book the same time.
+|
+| Before restoring it to BOOKED, make sure the therapist's slot
+| is still available.
+|
+*/
+
+if (
+  appointment.status ===
+  AppointmentStatus.CANCELLED_BY_MANAGER
+) {
+  const conflictingAppointment =
+    await tx.appointment.findFirst({
+      where: {
+        id: {
+          not: appointment.id,
+        },
+
+        therapistId:
+          appointment.therapistId,
+
+        branchId:
+          appointment.branchId,
+
+        status: {
+          not:
+            AppointmentStatus.CANCELLED_BY_MANAGER,
+        },
+
+        startTime: {
+          lt: appointment.endTime,
+        },
+
+        endTime: {
+          gt: appointment.startTime,
+        },
+      },
+
+      select: {
+        id: true,
+        code: true,
+      },
+    });
+
+  if (conflictingAppointment) {
+    throw new Error(
+      "RESTORE_TIME_CONFLICT"
+    );
+  }
+}
 
           const updatedAppointment =
             await tx.appointment.update({
@@ -292,6 +348,16 @@ export async function undoAppointmentStatus(
     );
 
     if (error instanceof Error) {
+      if (
+  error.message ===
+  "RESTORE_TIME_CONFLICT"
+) {
+  return {
+    success: false,
+    message:
+      "This appointment cannot be restored because the therapist's time slot has already been booked.",
+  };
+}
       if (
         error.message ===
         "UNDO_REQUIRES_MANAGER"

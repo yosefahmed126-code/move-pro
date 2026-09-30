@@ -288,6 +288,7 @@ enum UserStatus {
 
 enum PatientPackageStatus {
   ACTIVE
+  UPCOMING
   COMPLETED
   CANCELLED
   EXPIRED
